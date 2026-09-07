@@ -1,0 +1,508 @@
+.feed {
+  padding-top: calc(var(--logo-clearance) + 10px);
+  padding-bottom: var(--block-gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--block-gap);
+}
+
+/* =========================================================
+   BLOCO
+   NUNCA aplicar transform, filter, perspective, backdrop-filter
+   ou will-change em .block ou acima. Qualquer uma delas converte
+   o position:sticky do título em fixed e o efeito quebra em silêncio.
+   ========================================================= */
+
+.block {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: var(--block-width) 1fr;
+  column-gap: var(--gutter);
+  padding-inline: var(--gutter);
+}
+
+.block--right {
+  grid-template-columns: 1fr var(--block-width);
+}
+.block--right .block__main { grid-column: 2; text-align: right; }
+.block--right .block__side { grid-column: 1; grid-row: 1; }
+
+.block--center {
+  grid-template-columns: 1fr;
+  padding-inline: 0;
+}
+
+.block__main { grid-column: 1; min-width: 0; }
+.block__side { grid-column: 2; grid-row: 1; }
+
+/* ---------- título preso ---------- */
+
+.title {
+  position: sticky;
+  top: var(--logo-clearance);
+  z-index: var(--z-title);
+  /* 'wdth' 200 já é o teto do eixo variável da Advent Pro (100..200, ver
+     @import em base.css) — não dá pra ir além sem trocar de fonte.
+     'wght' subiu pro máximo do eixo (900). */
+  font-variation-settings: 'wdth' 200, 'wght' 900;
+  font-size: clamp(30px, 5.4vw, 74px);
+  line-height: .94;
+  letter-spacing: -.01em;
+  opacity: 1;
+  transition: opacity var(--t-text) ease;
+  margin-bottom: var(--title-media-gap);
+}
+
+.block--center .title { padding-inline: var(--gutter); text-align: right; }
+
+/* ---------- mídia ---------- */
+
+.media {
+  position: relative;
+  z-index: var(--z-media);
+  overflow: hidden;
+  max-height: var(--media-max-h);
+  background: var(--placeholder, #d8d5d0);
+}
+
+.media.is-missing {
+  min-height: clamp(220px, 42vw, 620px);
+  display: grid;
+  place-items: center;
+}
+
+.media.is-missing::before {
+  content: 'mídia em produção';
+  font-variation-settings: 'wdth' 100, 'wght' 400;
+  font-size: 14px;
+  color: var(--ink-60);
+}
+
+.media video,
+.media img {
+  width: 100%;
+  height: 100%;
+  max-height: var(--media-max-h);
+  object-fit: contain;
+  transition: filter .28s ease;
+}
+
+
+/* ---------- duotone, ativo só com painel aberto ---------- */
+
+.media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--hue);
+  mix-blend-mode: darken;
+  opacity: 0;
+  transition: opacity .28s ease;
+  pointer-events: none;
+}
+
+html.is-overlay-open .media video,
+html.is-overlay-open .media img { filter: grayscale(1) contrast(1.3) brightness(.92); }
+
+html.is-overlay-open .media::after { opacity: 1; }
+
+/* ---------- alvo de clique pro vídeo real (V8: sem ícone) ----------
+   A galeria de fotos passou a viver só na página do projeto (título é o
+   único link pra lá — o ícone ao lado do bloco foi removido). Aqui, quando
+   o projeto tem `video`, a mídia inteira vira alvo de clique pro modal,
+   sem indicação visual — só o cursor e o foco de teclado entregam que é
+   clicável. */
+
+.media__play,
+.slide__link {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  cursor: pointer;
+}
+
+/* difference garante contraste sobre qualquer mídia por baixo, mesmo
+   escura — o mesmo truque das setas do carrossel. */
+.media__play:focus-visible,
+.slide__link:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+  mix-blend-mode: difference;
+}
+
+/* ---------- carrossel ---------- */
+
+.media--carousel {
+  overflow: visible;
+  background: none;
+  max-height: none;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.block:has(.media--carousel) {
+  grid-template-columns: 1fr;
+  padding-inline: 0;
+}
+
+/* .block--right posiciona .block__main na coluna 2 (ver regra acima na
+   seção de BLOCO). Como o carrossel reduz a grid para uma única coluna
+   explícita, esse grid-column:2 sobra sem par e o grid cria uma coluna
+   implícita extra só para caber o item — o carrossel fica confinado a essa
+   coluna implícita em vez de ocupar a largura toda. Força de volta pra
+   coluna 1 em qualquer lado. */
+.block:has(.media--carousel) .block__main {
+  grid-column: 1;
+}
+
+.block:has(.media--carousel) .title {
+  padding-inline: var(--gutter);
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: var(--slide-gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding-inline: var(--peek);
+}
+.track::-webkit-scrollbar { display: none; }
+
+.slide {
+  position: relative;
+  flex: 0 0 var(--slide-width);
+  scroll-snap-align: center;
+  /* Sem isso, um slide de vídeo/imagem ainda não carregado não tem altura
+     intrínseca nenhuma (nem o <video> nem o <img> têm width/height fixos
+     no HTML) — o track inteiro colapsa pra altura 0 ou pro tamanho padrão
+     do navegador (300×150) até a mídia carregar. Isso torna qualquer
+     leitura de geometria logo no 'feed:pronto' (largura do slide,
+     scrollIntoView) instável — é a causa do V13 do vídeo em loop "sumir"
+     no carregamento. Mesmo valor do placeholder de "mídia em produção". */
+  min-height: clamp(220px, 42vw, 620px);
+  max-height: var(--media-max-h);
+  background: var(--placeholder, #d8d5d0);
+  overflow: hidden;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--z-arrow);
+  color: #fff;
+  mix-blend-mode: difference;
+  font-size: 26px;
+  line-height: 1;
+  padding: 10px;
+}
+
+.arrow--prev { left: calc(var(--peek) / 2 - 22px); }
+.arrow--next { right: calc(var(--peek) / 2 - 22px); }
+.arrow[hidden] { display: none; }
+
+/* ---------- bloco de pessoa (time) ----------
+   Variante do bloco de projeto: mesmo sticky, mesmo hover, mesmo duotone.
+   Muda a proporção, porque retrato vertical + bio longa não cabem na
+   divisão 82/18 da home — a coluna vazia vira coluna de texto. */
+
+.block--pessoa {
+  grid-template-columns: 38vw 1fr;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+}
+.block--pessoa.block--right {
+  grid-template-columns: 1fr 38vw;
+}
+
+/* .block__main normalmente é uma célula só, com título e mídia empilhados
+   em fluxo normal. O título aqui é um nome (ex. "Ricardo Rapozo") e pode
+   quebrar em 1 ou 2 linhas dependendo do nome e da largura — então não dá
+   pra alinhar a bio com a foto adivinhando a altura do título em CSS.
+   Em vez disso .block__main vira uma subgrid de 2 linhas que espelha as
+   linhas do grid externo (linha 1 = altura real do título, linha 2 =
+   mídia), e a bio ocupa a linha 2 do grid externo — alinhada exatamente
+   onde a mídia começa, seja qual for a altura do título. */
+.block--pessoa .block__main {
+  grid-row: 1 / 3;
+  display: grid;
+  grid-template-rows: subgrid;
+}
+.block--pessoa .title { grid-row: 1; }
+.block--pessoa .media { grid-row: 2; }
+
+.block--pessoa .block__side { grid-row: 2; }
+
+.block--pessoa .media { max-height: 78vh; }
+.block--pessoa .media img { object-position: top; }
+
+.bio {
+  position: sticky;
+  top: calc(var(--logo-clearance) + 10px);
+  max-width: 46ch;
+  font-size: clamp(15px, 1.15vw, 17px);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.bio p + p { margin-top: .9em; }
+
+.block--pessoa.block--right .bio { margin-left: auto; }
+
+/* ---------- galeria do diretor (páginas de bio) ----------
+   Mesmo ritmo do .feed da home: um gap entre blocos, sem padding próprio —
+   o espaço entre o bloco de pessoa e o primeiro projeto já vem do gap do
+   .feed que envolve os dois. */
+
+.galeria {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block-gap);
+}
+
+/* ---------- página de diretor: cabeçalho + abas trabalhos/bio (V16) ----------
+   O nome do diretor sai de dentro do bloco de pessoa (que tinha uma
+   subgrid só pra resolver o alinhamento bio↔foto por causa do título
+   variar de 1 a 2 linhas) e vira um cabeçalho de página, centralizado,
+   comum às duas abas. Sem título dentro do bloco de bio, não precisa mais
+   de subgrid — é só duas colunas simples. Ver js/diretor-tabs.js. */
+
+.diretor-header {
+  padding-inline: var(--gutter);
+  text-align: center;
+}
+
+/* V16.1: grande e centralizado nas duas abas — sem variação de tamanho
+   por aba. A referência visual tinha o nome grande em trabalhos e em
+   bio; a leitura de que ficava menor em trabalhos estava errada. */
+.diretor-nome {
+  font-variation-settings: 'wdth' 200, 'wght' 900;
+  font-size: clamp(48px, 8vw, 108px);
+  line-height: .94;
+  letter-spacing: -.01em;
+}
+
+.diretor-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 18px;
+  font-variation-settings: 'wdth' 175, 'wght' 700;
+  font-size: clamp(18px, 1.6vw, 24px);
+}
+
+/* V16.1: a linha sob a aba na referência era só o hover capturado no
+   print, não um indicador fixo de aba ativa — mesmo princípio do menu
+   principal ("Hover — menu" na seção 5: item da página atual não tem
+   sublinhado visual, só `aria-current` pra acessibilidade). Reaproveita
+   a mesma animação: linha entra pela esquerda no hover/foco, sem nada
+   estático marcando qual aba está aberta. */
+.diretor-tabs a { position: relative; }
+
+.diretor-tabs a::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -.06em;
+  height: 3px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--t-text) var(--ease-out);
+}
+
+.diretor-tabs a:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* V17: a separação de seção passa a ser marcada pelo peso da fonte, não só
+   por convenção implícita — pedido explícito pra essa página (diferente do
+   menu principal, onde `aria-current` continua sem estilo nenhum). O hover
+   acima não muda: a linha entra do mesmo jeito na aba ativa ou não. */
+.diretor-tabs a[aria-current='page'] {
+  font-variation-settings: 'wdth' 175, 'wght' 900;
+}
+
+/* ---------- bio do diretor (aba "bio") ----------
+   Duas colunas simples — sem título dentro do bloco, sem subgrid. */
+
+.diretor-bio {
+  display: grid;
+  grid-template-columns: 38vw 1fr;
+  column-gap: var(--gutter);
+  padding-inline: var(--gutter);
+  align-items: center;
+}
+
+.diretor-bio--right { grid-template-columns: 1fr 38vw; }
+.diretor-bio--right .diretor-bio__foto { grid-column: 2; grid-row: 1; }
+.diretor-bio--right .bio { grid-column: 1; grid-row: 1; margin-left: auto; }
+
+/* V16.2: object-fit:cover + aspect-ratio fixo em vez de contain — a foto
+   preenche a coluna inteira (uma "máscara" retangular sobre a imagem
+   original, que pode ter enquadramento diferente) em vez de sobrar
+   espaço vazio quando a proporção da imagem não bate exatamente com a
+   da coluna. align-items:center no grid pai alinha o bloco da foto ao
+   centro vertical do bloco de texto, em vez de grudar os dois no topo. */
+.diretor-bio__foto img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: top;
+}
+
+/* V16.2: texto de bio maior e com mais respiro que o `.bio` genérico
+   (usado também no time.html) — a referência mostrava um bloco de texto
+   claramente maior, não o tamanho "notas de rodapé" que o `.bio` de base
+   usa quando é uma coluna sticky ao lado da galeria. Sobrescreve só
+   dentro de `.diretor-bio`, sem mexer no time.html. */
+.diretor-bio .bio {
+  position: static;
+  max-width: 44ch;
+  font-size: clamp(17px, 1.35vw, 20px);
+  line-height: 1.6;
+}
+
+/* Parágrafo de abertura como uma frase de efeito: maior, em negrito,
+   sem aspas no texto (a pontuação de citação virava ruído visual — a
+   referência trata a frase como uma epígrafe tipográfica, não uma
+   citação entre aspas). Só o primeiro parágrafo, nas duas bios. */
+.diretor-bio .bio p:first-child {
+  font-weight: 700;
+  font-size: clamp(24px, 2.3vw, 32px);
+  line-height: 1.3;
+  margin-bottom: .85em;
+}
+
+/* ---------- página de diretor: link de volta pro final da página ----------
+   V17: fica fora dos dois `<section>` das abas, direto em `.feed`, então
+   aparece igual nas duas — não precisa duplicar o link dentro de cada aba.
+   O `gap` do `.feed` (flex column) já cria o respiro antes dele sozinho,
+   sem precisar de margin-top manual aqui. */
+.diretor-voltar {
+  text-align: right;
+  padding-inline: var(--gutter);
+}
+
+.diretor-voltar a {
+  position: relative;
+  font-variation-settings: 'wdth' 175, 'wght' 700;
+  font-size: clamp(16px, 1.4vw, 19px);
+}
+
+.diretor-voltar a::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -.06em;
+  height: 3px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--t-text) var(--ease-out);
+}
+
+.diretor-voltar a:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ---------- página de projeto (vídeo + galeria de fotos) ----------
+   Uma coluna só, sem alternância de lado — a página é sobre um projeto
+   só, não faz sentido dividir em bloco+coluna vazia. */
+
+.bloco-projeto {
+  grid-template-columns: 1fr;
+  padding-inline: var(--gutter);
+}
+
+/* V9: título de volta ao topo, dentro de .block__main junto com a mídia —
+   igual à home. É esse agrupamento (não uma regra CSS específica daqui)
+   que faz o título ficar "atrás" da mídia ao rolar e para de grudar assim
+   que .block__main termina, antes da galeria de fotos. Ver js/projeto.js. */
+.bloco-projeto .title { text-align: left; }
+
+.galeria-fotos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gutter);
+  margin-top: var(--block-gap);
+}
+
+.galeria-fotos__item { aspect-ratio: 1; overflow: hidden; }
+
+/* Cover (não contain) é uma exceção deliberada aqui: isto é uma galeria de
+   registro em grade, não a peça principal do cliente — a regra da seção de
+   mídia ("nunca recortar a peça do cliente") vale pro vídeo/imagem
+   principal, não pra fotos de bastidor numa grade uniforme. */
+.galeria-fotos__item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+/* ---------- responsivo ---------- */
+
+@media (max-width: 820px) {
+  :root { --block-width: 90vw; --slide-width: 88%; --peek: 5vw; }
+
+  .block,
+  .block--right,
+  .block--center {
+    grid-template-columns: 1fr;
+    padding-inline: var(--gutter);
+  }
+  .block--right .block__main,
+  .block--center .title { text-align: left; }
+  .block--right .block__main,
+  .block__main { grid-column: 1; }
+  .block--right .block__side,
+  .block__side { grid-column: 1; grid-row: 2; margin-top: 14px; }
+
+  .block--center .title { padding-inline: 0; }
+
+  /* 'wdth' fica em 175, não no teto de 200 — em 200 as palavras quebram
+     cedo demais numa tela estreita e o título vira 4 linhas (ver seção 3
+     do PROJETO.md). 'wght' acompanha o desktop, vai a 900. */
+  .title { font-size: clamp(26px, 8vw, 38px); font-variation-settings: 'wdth' 175, 'wght' 900; }
+
+  .block--pessoa,
+  .block--pessoa.block--right { grid-template-columns: 1fr; }
+  /* Desfaz a subgrid do desktop: em coluna única, título e mídia voltam a
+     empilhar em fluxo normal, e a bio (block__side) cai numa linha
+     implícita logo abaixo — o alinhamento por linha de grade só faz
+     sentido com as duas colunas lado a lado. */
+  .block--pessoa .block__main { grid-row: auto; display: block; }
+  .block--pessoa .block__side { grid-row: auto; }
+  .bio { position: static; max-width: none; margin-top: 18px; }
+  .block--pessoa.block--right .bio { margin-left: 0; }
+  .block--pessoa .media { max-height: 62vh; }
+
+  .panel--menu { height: auto; }
+
+  .galeria-fotos { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  .about-content__logo { width: min(220px, 60vw); }
+
+  .diretor-nome { font-size: clamp(32px, 10vw, 48px); }
+  .diretor-tabs { gap: 20px; }
+
+  .diretor-bio,
+  .diretor-bio--right { grid-template-columns: 1fr; }
+  .diretor-bio--right .diretor-bio__foto,
+  .diretor-bio--right .bio { grid-column: 1; }
+  .diretor-bio .bio { margin-left: 0; margin-top: 18px; }
+}
+
+/* ---------- movimento reduzido ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .track { scroll-behavior: auto; }
+  * { transition-duration: .01ms !important; }
+}

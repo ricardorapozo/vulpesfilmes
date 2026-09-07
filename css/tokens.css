@@ -1,0 +1,38 @@
+:root {
+  /* cor — estado base */
+  --paper: #F7F6F4;
+  --ink: #000000;
+  --ink-60: rgba(0, 0, 0, .6);
+
+  /* cor — sorteada por sessão, escrita por js/hue.js */
+  --hue: #EE7B85;
+  
+  /* painel de menu e quem somos */
+  --panel-bg: #FFFFFF;
+
+  /* medidas */
+  --gutter: clamp(18px, 3.4vw, 44px);
+  --logo-clearance: 56px;
+  --block-width: 82vw;
+  --media-max-h: 88vh;
+  --block-gap: clamp(72px, 12vh, 160px);
+  --title-media-gap: clamp(20px, 3vh, 40px);
+
+  /* carrossel */
+  --slide-width: 81%;
+  --slide-gap: 20px;
+  --peek: 7vw;
+
+  /* movimento */
+  --ease-out: cubic-bezier(.22, .61, .36, 1);
+  --t-text: .175s;
+  --t-panel: .48s;
+
+  /* planos */
+  --z-title: 1;
+  --z-media: 2;
+  --z-arrow: 3;
+  --z-gallery: 4;
+  --z-panel: 50;
+  --z-chrome: 60;
+}

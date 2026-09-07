@@ -1,0 +1,125 @@
+[
+  {
+    "slug": "cbcc-2026",
+    "titulo": "Cobertura Conferência Brasileira de Carbono 2026",
+    "cliente": "",
+    "ano": 2026,
+    "registro": "documental",
+    "tipo": "carousel",
+    "diretor": "ricardo-rapozo",
+    "video": "https://youtu.be/vB-p7HZ4F18",
+    "placeholder": "#b9ad9a",
+    "midia": [
+      {
+        "loop": "media/loops/cbcc-2026.mp4",
+        "poster": "media/posters/cbcc-2026.jpg",
+        "alt": "Cobertura da Conferência Brasileira de Carbono 2026"
+      }
+    ],
+    "galeria": [
+      { "src": "media/galeria/cbcc-2026/cbcc-2026-01.jpg", "alt": "Cobertura da Conferência Brasileira de Carbono 2026, foto 1" },
+      { "src": "media/galeria/cbcc-2026/cbcc-2026-02.jpg", "alt": "Cobertura da Conferência Brasileira de Carbono 2026, foto 2" },
+      { "src": "media/galeria/cbcc-2026/cbcc-2026-03.jpg", "alt": "Cobertura da Conferência Brasileira de Carbono 2026, foto 3" },
+      { "src": "media/galeria/cbcc-2026/cbcc-2026-04.jpg", "alt": "Cobertura da Conferência Brasileira de Carbono 2026, foto 4" }
+    ]
+  },
+  {
+    "slug": "dancebook-brasil",
+    "titulo": "Dancebook Brasil\nVideocase para LOVELY",
+    "cliente": "LOVELY",
+    "ano": 2025,
+    "registro": "publicitario",
+    "tipo": "carousel",
+    "diretor": "ricardo-rapozo",
+    "video": "https://youtu.be/9i_7-qpm3D8",
+    "placeholder": "#7a1420",
+    "midia": [
+      {
+        "loop": "media/loops/loopDancenbookBrasil.mp4",
+        "poster": "",
+        "alt": "Dancebook Brasil, vídeo em loop"
+      }
+    ],
+    "galeria": [
+      { "src": "media/posters/dancebook-01.jpg", "alt": "Dancebook Brasil, foto 1" },
+      { "src": "media/posters/dancebook-02.jpg", "alt": "Dancebook Brasil, foto 2" },
+      { "src": "media/posters/dancebook-03.jpg", "alt": "Dancebook Brasil, foto 3" }
+    ]
+  },
+  {
+    "slug": "gree-smartwind-brasil",
+    "titulo": "Gree Smartwind Brasil",
+    "cliente": "",
+    "ano": 2025,
+    "registro": "publicitario",
+    "tipo": "single",
+    "diretor": "ricardo-rapozo",
+    "video": "https://youtu.be/R5TITPHVX5A",
+    "placeholder": "#4a5a6b",
+    "midia": [
+      {
+        "loop": "media/loops/loopGREE-SMARTWIND.mp4",
+        "poster": "media/posters/gree-smartwind-brasil.jpg",
+        "alt": "Gree Smartwind Brasil"
+      }
+    ],
+    "galeria": []
+  },
+  {
+    "slug": "global-renewable-alliance-cop30",
+    "titulo": "Global Renewable Alliance - COP 30",
+    "cliente": "",
+    "ano": 2025,
+    "registro": "documental",
+    "tipo": "single",
+    "diretor": "ricardo-rapozo",
+    "video": "https://vimeo.com/1166997708?fl=tl&fe=ec",
+    "placeholder": "#4f6b52",
+    "midia": [
+      {
+        "loop": "media/loops/loopGRA-COP30.mp4",
+        "poster": "media/posters/gra-cop30.jpg",
+        "alt": "Global Renewable Alliance - COP 30"
+      }
+    ],
+    "galeria": []
+  },
+  {
+    "slug": "dossie-anonimo",
+    "titulo": "Dossiê Anônimo",
+    "cliente": "",
+    "ano": 2025,
+    "registro": "autoral",
+    "tipo": "single",
+    "diretor": "ricardo-rapozo",
+    "video": "https://youtu.be/pPmAcD78Cq8?si=UUxX3dKi91mb8iTL",
+    "placeholder": "#3a3f42",
+    "midia": [
+      {
+        "loop": "media/loops/loopDossieCaranguejo.mp4",
+        "poster": "media/posters/dossie-anonimo.jpg",
+        "alt": "Dossiê Anônimo, vídeo em loop"
+      }
+    ],
+    "galeria": []
+  },
+  {
+    "slug": "historias-do-brasil-redes",
+    "titulo": "Histórias do Brasil\nProjeto ReDes",
+    "cliente": "Instituto Votorantim",
+    "ano": 2026,
+    "registro": "documental",
+    "tipo": "single",
+    "diretor": "ricardo-rapozo",
+    "video": "https://vimeo.com/1123794473?share=copy&fl=sv&fe=ci",
+    "placeholder": "#c2b8a3",
+    "midia": [
+      {
+        "loop": "media/loops/loopReDes.mp4",
+        "poster": "media/posters/posterReDes.jpg",
+        "alt": "Histórias do Brasil, Projeto ReDes, vídeo em loop"
+      }
+    ],
+    "galeria": []
+  }
+]

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ricardo Rapozo — vulpesfilmes</title>
+<meta name="description" content="Diretor, Ricardo Rapozo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<script src="js/hue.js"></script>
+</head>
+<body>
+
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+<a class="logo" href="./">vulpesfilmes</a>
+
+<button class="burger" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu">
+  <span></span><span></span><span></span>
+</button>
+
+<main id="conteudo" class="feed" data-diretor-page>
+
+  <header class="diretor-header">
+    <h1 class="diretor-nome">Ricardo Rapozo</h1>
+    <nav class="diretor-tabs" aria-label="Seções de Ricardo Rapozo">
+      <a href="#trabalhos" data-tab="trabalhos">trabalhos</a>
+      <a href="#bio" data-tab="bio">bio</a>
+    </nav>
+  </header>
+
+  <section id="tab-trabalhos" class="diretor-painel">
+    <section class="galeria" data-diretor="ricardo-rapozo"></section>
+  </section>
+
+  <section id="tab-bio" class="diretor-painel" hidden>
+    <div class="diretor-bio">
+      <div class="diretor-bio__foto">
+        <img src="media/time/ricardo-rapozo.jpg" alt="Retrato de Ricardo Rapozo" width="960" height="1280">
+      </div>
+      <div class="bio" lang="pt-BR">
+        <p>A memória é um espaço em disputa.</p>
+        <p>Sua trajetória começou na televisão, no fim dos anos noventa, e atravessa quase três décadas de audiovisual entre publicidade, documentários, televisão e projetos autorais. Nesse percurso, passou pela ilha de edição, direção, preparação de atores, motion design e pós-produção, construindo um olhar que transita entre diferentes etapas do fazer audiovisual.</p>
+        <p>Nunca enxergou essas áreas como disciplinas isoladas. Para ele, todas respondem à mesma pergunta: como uma ideia ganha forma, ritmo e significado? Hoje, desenvolve projetos do conceito ao acabamento final, unindo pesquisa, roteiro, direção, montagem, animação e finalização em um mesmo processo criativo. O movimento é consequência de uma estrutura bem construída. Imagens são os moldes de nossas lembranças.</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="diretor-voltar"><a href="./">voltar</a></p>
+
+</main>
+
+<footer>
+  <p>&copy; 2026 vulpesfilmes</p>
+  <p><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a></p>
+  <p>São Paulo / Brasil. Atendendo o mundo todo.</p>
+</footer>
+
+<nav id="menu" class="panel panel--menu" aria-label="Navegação principal">
+  <ul>
+    <li><a href="./">Portfólio</a></li>
+    <li>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="submenu-diretores">Diretores</button>
+      <button class="submenu-back" type="button">voltar</button>
+      <ul id="submenu-diretores" class="submenu" hidden>
+        <li><a href="ricardo-rapozo.html" aria-current="page">Ricardo Rapozo</a></li>
+        <li><a href="daniela-luquini.html">Daniela Luquini</a></li>
+      </ul>
+    </li>
+    <li><a href="#quem-somos" data-abre="quem-somos">Quem somos</a></li>
+    <li><a href="#contato" data-abre="contato">Contato</a></li>
+  </ul>
+  <p class="social">
+    <a href="#">vimeo</a><span aria-hidden="true">/</span>
+    <a href="#">instagram</a><span aria-hidden="true">/</span>
+    <a href="#">youtube</a>
+  </p>
+</nav>
+
+<section id="quem-somos" class="panel panel--about" aria-label="Quem somos">
+  <button type="button" class="close" data-fecha>fechar</button>
+  <div class="about-content">
+    <img class="about-content__logo" src="media/vulpesFilmes-LOGO-HORIZONTAL.png" alt="vulpesfilmes" width="1791" height="772">
+    <div class="prose">
+      <p>A Vulpes é um pequeno bureau de soluções audiovisuais. Um lugar para pensar, criar e dar forma a ideias.</p>
+      <p>Trabalhamos onde estratégia encontra imagem: na direção, no roteiro, na edição, no motion e na pós-produção. Entramos no projeto conforme o que ele pede, juntando olhar criativo, repertório e precisão técnica para transformar uma boa ideia em algo que realmente mereça ser visto.</p>
+    </div>
+  </div>
+</section>
+
+<section id="contato" class="panel panel--contact" aria-label="Contato" role="dialog" aria-modal="true" aria-hidden="true">
+  <button type="button" class="close" data-fecha>fechar</button>
+  <div class="contact-card">
+    <p class="contact-card__local">São Paulo, Brasil</p>
+    <p class="contact-card__item"><a href="mailto:contato@vulpesfilmes.com.br">contato@vulpesfilmes.com.br</a></p>
+    <p class="contact-card__item"><a href="tel:+5511994780379">+55 11 994780379</a></p>
+  </div>
+</section>
+
+<div id="video-modal" class="video-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Vídeo do projeto" inert>
+  <button type="button" class="video-modal__close">fechar</button>
+  <div class="video-modal__frame"></div>
+</div>
+
+<script src="js/helpers.js"></script>
+<script src="js/no-download.js"></script>
+<script src="js/diretores.js"></script>
+<script src="js/projetos.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/diretor-tabs.js"></script>
+<script src="js/feed.js?v=5"></script>
+<script src="js/media.js"></script>
+<script src="js/carousel-infinite.js"></script>
+<script src="js/video-modal.js"></script>
+</body>
+</html>

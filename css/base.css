@@ -1,0 +1,475 @@
+@import url('https://fonts.googleapis.com/css2?family=Advent+Pro:wdth,wght@100..200,100..900&family=Newsreader:opsz,wght@6..72,300..700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Advent Pro', sans-serif;
+  font-variation-settings: 'wdth' 100, 'wght' 400;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  transition: background-color var(--t-panel) var(--ease-out);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* IMPORTANTE: overflow-x fica no body, nunca num ancestral de .title,
+   senão o position:sticky do título morre sem aviso. */
+
+.is-overlay-open body,
+html.is-overlay-open body { background: var(--hue); }
+
+html.is-overlay-open { overflow: hidden; }
+
+a { color: inherit; text-decoration: none; }
+
+/* V17: dificulta o download casual de mídia — sem isso, arrastar a imagem
+   pra fora da aba ou o toque longo no celular ("salvar na galeria") já
+   bastam pra baixar o arquivo, mesmo com o menu de botão direito bloqueado
+   por JS (ver js/no-download.js). Não é proteção real (inspecionar/baixar
+   via devtools sempre funciona pra quem sabe), só tira o atalho óbvio. */
+img, video {
+  display: block;
+  max-width: 100%;
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* O reset acima (author) vence o [hidden] nativo do navegador (user-agent),
+   que perde mesmo tendo especificidade maior — a origem do stylesheet decide
+   antes da especificidade. Sem isto, mídia quebrada usa media.js para
+   esconder a tag via `hidden`, mas o ícone de imagem quebrada continua visível
+   por baixo do placeholder "mídia em produção". */
+img[hidden], video[hidden] { display: none; }
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+/* ---------- linha: hover de menu e foco de teclado em qualquer lugar ---------- */
+
+.panel--menu a,
+.panel--menu .menu-toggle { position: relative; }
+
+.panel--menu a::after,
+.panel--menu .menu-toggle::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -.06em;
+  height: 3px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--t-text) var(--ease-out);
+}
+
+.panel--menu a:hover::after,
+.panel--menu .menu-toggle:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.panel--menu a:focus-visible,
+.panel--menu .menu-toggle:focus-visible,
+.title a:focus-visible,
+.diretor-tabs a:focus-visible,
+.diretor-voltar a:focus-visible,
+.arrow:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: .14em;
+  text-decoration-skip-ink: none;
+}
+
+:focus { outline: none; }
+
+/* ---------- chrome fixo ---------- */
+
+.logo {
+  position: fixed;
+  top: 18px;
+  left: var(--gutter);
+  z-index: var(--z-chrome);
+  font-variation-settings: 'wdth' 175, 'wght' 700;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.burger {
+  position: fixed;
+  top: 18px;
+  right: var(--gutter);
+  z-index: var(--z-chrome);
+  width: 34px;
+  height: 26px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+}
+
+.burger span {
+  display: block;
+  height: 3px;
+  background: var(--ink);
+  transition: transform .3s var(--ease-out), opacity .2s linear;
+}
+
+.burger[aria-expanded='true'] span:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+.burger[aria-expanded='true'] span:nth-child(2) { opacity: 0; }
+.burger[aria-expanded='true'] span:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+.skip:focus {
+  left: var(--gutter);
+  top: 12px;
+  z-index: 999;
+  background: var(--paper);
+  padding: 8px 12px;
+}
+
+/* ---------- painéis: menu (topo) e quem somos (rodapé) ---------- */
+
+.panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: var(--z-panel);
+  background: var(--panel-bg);
+  padding: calc(var(--logo-clearance) + 14px) var(--gutter) var(--gutter);
+  transition: transform var(--t-panel) var(--ease-out);
+  overflow: hidden;
+}
+
+.panel--menu   { top: 0;    height: auto; transform: translateY(-101%); }
+.panel--about  { bottom: 0; height: auto; transform: translateY(101%); padding-top: calc(var(--logo-clearance) + 14px); }
+
+.panel.is-open { transform: translateY(0); }
+
+.panel--menu ul { list-style: none; }
+
+.panel--menu.is-directors-open > ul > li > a,
+.panel--menu.is-directors-open > .social,
+.panel--menu:has(.menu-toggle[aria-expanded='true']) > ul > li > a,
+.panel--menu:has(.menu-toggle[aria-expanded='true']) > .social {
+  display: none;
+}
+
+html.is-directors-open .burger,
+html:has(.menu-toggle[aria-expanded='true']) .burger { display: none; }
+
+/* V11: enquanto o modal de vídeo ou o lightbox de fotos está aberto, logo
+   e hambúrguer somem — ficam nos mesmos 18px/var(--gutter) do topo que o
+   "fechar" do modal (.video-modal__close, .photo-modal__close) e entravam
+   em conflito visual e de foco de teclado com ele. Só "fechar" continua
+   acessível nesse momento. */
+html.is-lightbox-open .logo,
+html.is-lightbox-open .burger { display: none; }
+
+.panel--menu ul a {
+  display: inline-block;
+  font-variation-settings: 'wdth' 200, 'wght' 800;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: .98;
+  letter-spacing: -.01em;
+}
+
+.menu-toggle {
+  display: inline-block;
+  font-variation-settings: 'wdth' 200, 'wght' 800;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: .98;
+  letter-spacing: -.01em;
+  padding: 0;
+}
+
+.submenu {
+  list-style: none;
+  margin-top: 12px;
+  padding-left: 0;
+  display: none;
+}
+
+.submenu-back {
+  display: none;
+  padding: 0;
+  margin: 0 0 10px;
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
+.menu-toggle[aria-expanded='true'] + .submenu-back { display: inline-block; }
+
+.submenu[hidden] { display: none; }
+.menu-toggle[aria-expanded='true'] ~ .submenu { display: block; }
+
+.submenu a {
+  display: inline-block;
+  font-variation-settings: 'wdth' 200, 'wght' 800;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: .98;
+  letter-spacing: -.01em;
+}
+
+.social {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+}
+
+/* V14: bloco logo+texto centralizado no painel (não alinhado ao gutter
+   como o resto do site) e o logo bem maior, quase a mesma largura do
+   texto — release anterior tinha os dois flush à esquerda e o logo
+   proporcionalmente pequeno perto do texto. `margin-inline: auto` com
+   `max-width` centraliza o conjunto; o logo em si usa clamp mais alto. */
+.about-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(32px, 6vw, 96px);
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+.about-content__logo {
+  width: clamp(260px, 30vw, 460px);
+  height: auto;
+  flex-shrink: 0;
+}
+
+.panel--about .prose {
+  max-width: 52ch;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(16px, 1.5vw, 20px);
+  line-height: 1.5;
+}
+.panel--about .prose p + p { margin-top: 1em; }
+
+/* "fechar" do quem-somos vai pro canto superior direito do próprio
+   painel (V12) — antes ficava em fluxo normal, acima do logo, sobrando
+   sozinho no canto esquerdo. .panel já é position:fixed, então
+   position:absolute aqui ancora no próprio painel, não no viewport. */
+.panel--about .close {
+  position: absolute;
+  top: 18px;
+  right: var(--gutter);
+  margin-bottom: 0;
+}
+
+.panel--about .close,
+.panel--contact .close {
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
+.panel--contact .close { margin-bottom: 24px; }
+
+/* ---------- painel: card de contato (terceira variante) ----------
+   Mesmo mecanismo dos outros dois painéis (Esc, clique fora, foco preso,
+   cor de fundo via .is-overlay-open), mas ele não desce do topo nem sobe
+   do rodapé: é um card centralizado, com transform próprio. */
+
+.panel--contact {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  height: auto;
+  width: min(420px, 88vw);
+  padding: calc(var(--gutter) * 1.1) var(--gutter) var(--gutter);
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.94);
+  transition: transform var(--t-panel) var(--ease-out), opacity var(--t-panel) var(--ease-out);
+}
+
+.panel--contact.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.contact-card__local {
+  font-variation-settings: 'wdth' 200, 'wght' 800;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1;
+  margin-bottom: 18px;
+}
+
+.contact-card__item {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(16px, 1.5vw, 20px);
+  line-height: 1.5;
+}
+
+.contact-card__item + .contact-card__item { margin-top: 4px; }
+
+.contact-card__item a:hover,
+.contact-card__item a:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: .14em;
+  text-decoration-skip-ink: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel--contact { transition: opacity var(--t-panel) var(--ease-out); }
+}
+
+.bio {
+  font-family: 'Newsreader', Georgia, serif;
+}
+
+/* ---------- modal de vídeo ----------
+   Deliberadamente fora do sistema de "painel" (menu/quem-somos/contato):
+   fundo escuro de cinema fixo, não a cor sorteada da sessão, e sem o
+   duotone nas mídias atrás — o objetivo é assistir o vídeo, não o efeito
+   de cor. Ver js/video-modal.js. */
+
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-panel);
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: rgba(0, 0, 0, .92);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-panel) var(--ease-out);
+}
+
+.video-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.video-modal__close {
+  position: fixed;
+  top: 18px;
+  right: var(--gutter);
+  z-index: var(--z-chrome);
+  color: #fff;
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
+.video-modal__frame {
+  width: min(1100px, 92vw);
+  aspect-ratio: 16 / 9;
+}
+
+.video-modal__frame iframe,
+.video-modal__frame video {
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-modal { transition: none; }
+}
+
+/* ---------- carrossel de fotos (lightbox da galeria) ----------
+   Mesmo princípio do modal de vídeo: fundo escuro de cinema, fora do
+   sistema de painel. Abre ao clicar numa foto de .galeria-fotos (ver
+   js/photo-modal.js) e navega entre as fotos daquela galeria com as
+   mesmas setas do carrossel da home (mix-blend-mode: difference). */
+
+.photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-panel);
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: rgba(0, 0, 0, .92);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-panel) var(--ease-out);
+}
+
+.photo-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.photo-modal__close {
+  position: fixed;
+  top: 18px;
+  right: var(--gutter);
+  z-index: var(--z-chrome);
+  color: #fff;
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
+.photo-modal__frame {
+  position: relative;
+  width: min(1200px, 92vw);
+  height: min(84vh, 92vw);
+  display: grid;
+  place-items: center;
+}
+
+.photo-modal__img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.photo-modal__frame .arrow { position: absolute; }
+.photo-modal__frame .arrow--prev { left: -50px; }
+.photo-modal__frame .arrow--next { right: -50px; }
+
+@media (max-width: 820px) {
+  .photo-modal__frame .arrow--prev { left: 4px; }
+  .photo-modal__frame .arrow--next { right: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-modal { transition: none; }
+}
+
+/* ---------- rodapé ---------- */
+
+footer {
+  padding: 24px var(--gutter);
+  border-top: 1px solid var(--ink);
+  background: transparent;
+  font-variation-settings: 'wdth' 100, 'wght' 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+footer p {
+  margin: 0 0 8px 0;
+}
+
+footer a {
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: .14em;
+  text-decoration-skip-ink: none;
+}
