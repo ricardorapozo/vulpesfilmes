@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.8.3.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.8.4.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1732,6 +1732,58 @@ generalizou: **vídeo em loop nunca tem poster**, ver "Vídeo tem
 prioridade sobre poster" na seção 4 — o campo `poster` de um item com
 `loop` simplesmente não é mais usado pra nada.
 
+### Compartilhamento (Open Graph / Twitter Card, V1.8.4)
+
+Até a V1.8.3 nenhuma página tinha `og:*`/`twitter:*` — colar o link do
+site num chat/rede social gerava um card genérico, sem imagem. Pedido:
+"precisamos melhorar o card do site vulpes... existe um arquivo
+previewVulpes.jpg. Trabalhe isso." `media/previewVulpes.jpg` (1200×630,
+fundo amarelo da marca + wordmark "vulpesfilmes" em preto) já veio
+pronto no tamanho recomendado pelas plataformas — não precisou de
+nenhum tratamento de imagem, só entrar nas tags.
+
+Cada uma das 5 páginas ganhou o mesmo bloco no `<head>`, logo depois do
+`<meta name="description">` que já existia:
+
+```html
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vulpesfilmes">
+<meta property="og:title" content="...">
+<meta property="og:description" content="...">
+<meta property="og:url" content="https://vulpesfilmes.com/...">
+<meta property="og:image" content="https://vulpesfilmes.com/media/previewVulpes.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="...">
+<meta name="twitter:description" content="...">
+<meta name="twitter:image" content="https://vulpesfilmes.com/media/previewVulpes.jpg">
+```
+
+`og:title`/`og:description` reaproveitam o `<title>`/`<meta
+description>` que cada página já tinha — nenhum texto novo inventado.
+`ricardo-rapozo.html`/`daniela-luquini.html` usam `og:type="profile"`
+(páginas de pessoa); as outras três, `"website"`.
+
+**`og:image`/`og:url` em URL absoluta (`https://vulpesfilmes.com/...`),
+não relativa** — ao contrário de link/script/img normais do site
+(sempre relativos, pra funcionar em qualquer domínio/porta local), os
+crawlers de preview (WhatsApp, Twitter/X, Facebook, Slack) buscam a
+imagem direto do servidor deles, sem contexto de página — uma URL
+relativa não resolveria pra nada.
+
+**Limite conhecido: `projeto.html` é um template único (seção 6) — o
+card de um link `projeto.html?slug=X` específico não reflete aquele
+projeto.** `og:title`/`og:description`/`og:url` de `projeto.html` são
+genéricos ("Projeto — vulpesfilmes"), porque essas tags são estáticas
+no HTML e os crawlers de preview não executam o JavaScript que troca
+`document.title`/monta a página a partir de `projetos.json` (mesma
+limitação que já existia pro `<title>` da aba do navegador antes desse
+JS rodar — não é uma limitação nova introduzida aqui, só mais visível
+agora que existe card pra reparar nisso). Resolver de verdade pediria
+gerar HTML por projeto em build ou renderizar no servidor — fora do
+escopo de um site 100% estático sem build.
+
 ---
 
 ## 11. Pendências
@@ -1769,6 +1821,10 @@ Em aberto, não bloqueiam:
 
 - [x] Texto real de "Quem somos" — **Resolvido em V11** (era lorem ipsum)
 - [ ] Confirmar a paleta de 6 cores (as do documento são propostas)
+- [ ] Card de compartilhamento de `projeto.html?slug=X` mostra sempre o
+  mesmo título/imagem genéricos do template, não o projeto específico
+  (ver seção 10, "Compartilhamento") — só resolveria com build por
+  página ou render no servidor; fora do escopo atual (site estático)
 - [x] Comportamento da galeria e página de projeto individual — **Resolvido
   em V7**, refinado em V9 (título de volta ao topo, sticky como na home) e
   V10 (Vimeo além de YouTube/mp4): `projeto.html?slug=<slug>` (template
@@ -3263,3 +3319,23 @@ resto, mantenha como está."
   (a lista de slugs é lida direto de `projetos.json`, então já não
   testa mais o slug removido) sem erro de console ou de rede genuíno
   além do ruído de terceiro já catalogado (Vimeo).
+
+### 1.8.4
+
+Patch: "precisamos melhorar o card do site vulpes. Na pasta media
+existe um arquivo previewVulpes.jpg. Trabalhe isso."
+
+- **Meta tags Open Graph + Twitter Card adicionadas nas 5 páginas** —
+  não existia nenhuma até aqui. `og:image`/`twitter:image` apontam pra
+  `media/previewVulpes.jpg` (1200×630, já no tamanho recomendado, sem
+  precisar de tratamento); `og:title`/`og:description` reaproveitam o
+  `<title>`/`<meta description>` que cada página já tinha.
+  `ricardo-rapozo.html`/`daniela-luquini.html` usam `og:type="profile"`;
+  o resto, `"website"`. Detalhes e o limite conhecido de
+  `projeto.html` (card genérico, não por projeto — página é um
+  template só, sem build/SSR) documentados na seção 10.
+- Verificado via Playwright: `og:title`/`og:image`/`og:url`/
+  `twitter:card`/`twitter:image` confirmados presentes e corretos nas
+  5 páginas; `media/previewVulpes.jpg` confirmada respondendo `200` com
+  `content-type: image/jpeg`. Smoke test completo sem erro de console
+  ou de rede genuíno além do ruído de terceiro já catalogado (Vimeo).
