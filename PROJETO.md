@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.8.6.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.8.7.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -3366,3 +3366,27 @@ Lovely'".
   barra do topo da página do projeto. Smoke test completo sem erro de
   console ou de rede genuíno além do ruído de terceiro já catalogado
   (Vimeo).
+
+### 1.8.7
+
+Patch: "altere o link do vídeo do projeto redes -> https://youtu.be/
+DXdqCU5ujmM e suba de novo o loop da pasta media 'loopReDes.mp4'".
+
+- **`historias-do-brasil-redes`: `video` trocado do Vimeo
+  (`vimeo.com/1123794473...`) pro YouTube
+  (`https://youtu.be/DXdqCU5ujmM`)** — projeto passa a usar o mesmo
+  provedor da maioria dos outros; deixa de ser um dos dois únicos
+  projetos em Vimeo (o outro é "COP30/UN Conference...", que continua).
+  Como consequência boa, o ruído de terceiro do Vimeo (401 de analytics
+  interno + logs `%c%d`) que aparecia nesse projeto no smoke test some
+  — só o outro projeto em Vimeo ainda mostra esse ruído catalogado.
+- **`media/loops/loopReDes.mp4` substituído** — arquivo novo já estava
+  no lugar no disco (era ~5MB, o novo é ~2.9MB) quando o pedido chegou;
+  só precisou ser incluído no commit.
+- Verificado via Playwright: embed do vídeo na página do projeto
+  confirmado apontando pro novo ID do YouTube
+  (`youtube.com/embed/DXdqCU5ujmM`); loop novo confirmado carregando e
+  tocando no bloco da home (`paused:false, readyState:4`) depois de
+  entrar na viewport. Smoke test completo sem erro de console ou de
+  rede genuíno além do ruído de terceiro já catalogado (Vimeo, agora só
+  no projeto COP30/UN Conference).
