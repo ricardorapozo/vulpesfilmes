@@ -22,5 +22,21 @@
            'style="--placeholder:' + escapar(placeholder) + '">';
   }
 
-  window.VulpesHelpers = { escapar: escapar, midiaHTML: midiaHTML };
+  /* V1.6: movido de js/video-modal.js pra cá — o player inline da própria
+     página de projeto (js/projeto.js) precisa da mesma conversão de URL
+     pra embed, e duplicar a regex em dois arquivos era um convite a
+     desalinhar um do outro depois. Retorna a URL de embed (YouTube/Vimeo,
+     já com autoplay) ou null se for um mp4 local — nesse caso quem chama
+     monta uma <video> em vez de <iframe>. */
+  function urlDeEmbed(url) {
+    var yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/);
+    if (yt) return 'https://www.youtube.com/embed/' + yt[1] + '?autoplay=1&rel=0';
+
+    var vimeo = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeo) return 'https://player.vimeo.com/video/' + vimeo[1] + '?autoplay=1';
+
+    return null;
+  }
+
+  window.VulpesHelpers = { escapar: escapar, midiaHTML: midiaHTML, urlDeEmbed: urlDeEmbed };
 })();

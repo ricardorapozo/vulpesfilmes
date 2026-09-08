@@ -1,8 +1,15 @@
-/* Painel é um componente com duas variantes, não dois componentes.
-   Menu desce do topo (50vh), quem somos sobe do rodapé (66vh).
-   Comportamento idêntico: Esc, clique fora, foco preso, inert atrás.
-   .is-overlay-open no <html> dispara a cor de fundo e o duotone. */
+/* Painel é um componente com três variantes. Menu desce do topo,
+   contato e quem-somos são cards centralizados, fade simples de
+   opacidade (ver `.panel--about`/`.panel--contact` em base.css). Esc,
+   clique fora, foco preso, inert atrás. .is-overlay-open no <html>
+   dispara a cor de fundo e o duotone — independente da animação de
+   entrada/saída de cada painel, não muda com nenhuma delas.
 
+   V1.7 tinha trocado a entrada/saída do "quem somos" pelo "dip to
+   white" padrão do site (`document.startViewTransition()`, mesmo
+   truque de `js/diretor-tabs.js`); V1.7.8 reverteu — pedido explícito
+   pra tirar o dip e voltar a um fade in/out normal, igual ao card de
+   contato. */
 (function () {
   var raiz = document.documentElement;
   var burger = document.querySelector('.burger');
@@ -33,12 +40,24 @@
   function abrir(painel, origem) {
     gatilho = origem || document.activeElement;
 
-    /* Troca entre painéis: os movimentos se sobrepõem em 120ms, senão a
-       tela fica vazia no meio e o corte parece erro de carregamento.
-       .is-overlay-open nunca cai, então a cor não pisca. */
+    /* Troca entre painéis: por padrão os movimentos se sobrepõem em
+       120ms, senão a tela fica vazia no meio e o corte parece erro de
+       carregamento. .is-overlay-open nunca cai, então a cor não pisca.
+
+       Abrir "quem somos" é a exceção: pedido explícito de sequência
+       limpa — "a barra do menu se recolhe e o card aparece com fade
+       in", sem sobrepor os dois movimentos. Com um card tão grande
+       (90vw de largura), a sobreposição padrão deixava o conteúdo da
+       página (fotos, títulos) visível ATRAVÉS do card ainda
+       semitransparente em plena animação — um "fantasma" que lia como
+       se o fundo também estivesse mudando. Por isso espera o painel
+       anterior terminar de recolher de verdade (mesma duração de
+       `--t-panel`, tokens.css) antes de começar o fade do card. */
+    var espera = painel === about ? 480 : 120;
+
     if (aberto && aberto !== painel) {
       aberto.classList.remove('is-open');
-      setTimeout(function () { painel.classList.add('is-open'); sincronizar(); focar(painel); }, 120);
+      setTimeout(function () { painel.classList.add('is-open'); sincronizar(); focar(painel); }, espera);
       aberto = painel;
       return;
     }

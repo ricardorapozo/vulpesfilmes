@@ -1,9 +1,12 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 0.17** (beta). A partir de agora o projeto é numerado por versão:
-enquanto estivermos no beta, cada leva de alterações pedida vira uma
-versão (0.01, 0.02, ...). As levas anteriores a esta não foram numeradas
-retroativamente — o histórico formal começa aqui. Ver Changelog, seção 12.
+**Versão 1.8.3.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
+`0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
+daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
+`1.1`, `1.2`, etc. — sem o prefixo `0.` (esse prefixo só existia pra
+marcar que o site ainda não tinha ido ao ar; agora foi). Ver Changelog,
+seção 12.
 
 ---
 
@@ -34,8 +37,10 @@ puro, porque ele destaca do fundo. Vídeos com fundo claro precisam de atenção
 
 ### Estado painel aberto
 
-Vale para os dois painéis do site — menu e quem somos. Não é um efeito do menu,
-é o efeito de qualquer painel aberto. Classe no `<html>`: `.is-overlay-open`.
+Vale para os três painéis do site — menu, quem somos e contato. Não é um
+efeito do menu, é o efeito de qualquer painel aberto (**ou da página parada
+por 30s, V1.8 — ver "Ativação por inatividade" no fim desta seção**). Classe
+no `<html>`: `.is-overlay-open`.
 
 Uma cor é sorteada e passa a valer como `--hue`. Ela ocupa o fundo inteiro
 e vira o tom do duotone das mídias.
@@ -85,8 +90,80 @@ Aplicado às mídias apenas enquanto o menu está aberto.
 produz o alto contraste do mockup. `screen` ou `multiply` dariam resultado errado:
 o primeiro lava as sombras, o segundo escurece tudo.
 
+**Bug corrigido (patch): a cobertura vazava conforme o site crescia.**
+O trecho acima é só pra `.media` — a classe do feed/carrossel original.
+Cada versão que trouxe mídia com um container de classe diferente
+(`.diretor-bio__foto`, a bio do diretor, V16; `.projeto-video`, o
+vídeo de verdade da página de projeto, V1.6; `.galeria-fotos__item`, a
+grade de fotos, V1.1) deixou essa mídia nova de fora do duotone sem
+ninguém perceber, porque a regra nunca dava erro — só silenciosamente
+não se aplicava. Pedido explícito depois de encontrarem o problema: "o
+efeito de cor deve cobrir TODOS os elementos da página, inclusive as
+fotos e vídeos. A única coisa que fica por cima é o menu, submenu,
+quem somos e contato." Corrigido repetindo exatamente o mesmo par de
+regras (`position:relative` + `::after` + filtro) pros três
+containers que faltavam — ver `css/layout.css`, logo depois do bloco
+de `.media` acima, com um comentário listando os quatro lugares.
+
+**Ficam de fora, de propósito, não por descuido:** o menu (texto, sem
+mídia nenhuma dentro), os painéis "quem somos" (`.about-content__logo`)
+e "contato" (sem mídia), e os dois lightboxes — modal de vídeo e de
+fotos. Os lightboxes não são um esquecimento: eles já são sistemas com
+fundo próprio, deliberadamente fora da cor da sessão desde que existem
+(ver seção 6, "Modal de vídeo") — o mesmo princípio de "quem somos"/
+"contato" ficarem por cima, só que documentado num lugar diferente.
+
+**Se um container de mídia novo aparecer numa versão futura**, ele
+precisa entrar nessa lista também — não existe um mecanismo que
+detecta mídia nova automaticamente; é uma cobertura por enumeração, e
+esse bug é a prova de que esquecer de atualizá-la é fácil.
+
 No estado base o `filter` fica desligado (`filter: none`), então as mídias
 aparecem em cor cheia.
+
+### Ativação por inatividade (V1.8)
+
+"Quando a página ficar parada por 30 segundos o efeito de cor toma toda a
+página. Ele sai assim que o mouse se mover novamente." `js/idle-color.js`,
+script novo, carregado nas 5 páginas junto com `js/panel.js`:
+
+```js
+document.addEventListener('mousemove', reiniciar);
+timer = setTimeout(ativar, 30000);
+```
+
+`ativar()` só faz `raiz.classList.add('is-overlay-open')` — reaproveita a
+MESMA classe/efeito dos painéis (fundo + duotone), não um efeito visual
+separado. `reiniciar()` (chamado a cada `mousemove`) desativa e zera o
+cronômetro — qualquer movimento do mouse adia os 30s de novo, começando do
+zero; só falta de movimento sustentada dispara o efeito.
+
+**Coordenação com `js/panel.js`, pra não brigar pela mesma classe:**
+`js/panel.js` já controla `.is-overlay-open` sozinho (seção "Painel" abaixo)
+sempre que um painel abre/fecha, recalculando do zero (`raiz.classList.toggle
+('is-overlay-open', algumPainelAberto)`) — sem coordenação, o idle e o painel
+ligariam/desligariam a mesma classe por cima um do outro. Duas guardas
+resolvem isso sem precisar os dois arquivos se conhecerem:
+
+- **`ativar()` não faz nada se algum painel real já estiver aberto**
+  (`document.querySelector('.panel.is-open')`) — não faz sentido o efeito de
+  inatividade "ativar" algo que já está ativo por outro motivo, e evita que o
+  idle pise no estado que o painel está gerenciando.
+- **`desativar()` só remove a classe se foi o PRÓPRIO idle que ligou**
+  (flag `ativo`, interno do script) — se um painel está aberto quando o mouse
+  se move, `ativo` nunca virou `true` (a guarda acima impediu), então
+  `desativar()` não faz nada e o efeito do painel continua intacto. Testado
+  via Playwright com `page.clock` (fast-forward sem esperar de verdade):
+  painel aberto + 31s parado + mouse se movendo, nessa ordem, mantém
+  `is-overlay-open` verdadeiro do início ao fim; fechar o painel derruba a
+  classe (por `panel.js`); os próximos 31s parado ativam o idle normalmente.
+- Nenhum dos dois lados precisa saber que o outro existe além dessas duas
+  checagens — `panel.js` não foi alterado nesta versão.
+
+Reaproveita as MESMAS transições CSS que já animam a entrada/saída do efeito
+em qualquer painel (`body { transition: background-color var(--t-panel) }`,
+`.28s` no filtro/duotone das mídias) — nenhuma CSS nova foi necessária, só o
+toggle da classe.
 
 ---
 
@@ -319,6 +396,98 @@ dos slides sem realinhar o scroll deixa a posição desatualizada.
 (real ou clone) está mais perto do centro do `.track` no momento e
 recentraliza nele, sem se importar se é o slide 0 ou não.
 
+**Arrastar com o mouse rola o carrossel (V1.4).** Toque sempre rolou
+sozinho — é o `overflow-x: auto` padrão do navegador respondendo ao
+gesto nativo de swipe, nunca precisou de JS. Faltava só o mouse, que
+não tem gesto de arrastar embutido no browser para scroll horizontal.
+`carousel-infinite.js` usa Pointer Events filtrando por
+`e.pointerType === 'mouse'` — toque e caneta continuam exatamente no
+scroll nativo, sem passar pelo código novo:
+
+```js
+track.addEventListener('pointerdown', function (e) {
+  if (e.pointerType !== 'mouse' || e.button !== 0) return;
+  arrastando = true;
+  inicioX = e.clientX;
+  inicioScroll = track.scrollLeft;
+});
+window.addEventListener('pointermove', function (e) {
+  if (!arrastando) return;
+  track.scrollLeft = inicioScroll - (e.clientX - inicioX);
+});
+```
+
+**Armadilha encontrada e corrigida no processo: `track.setPointerCapture()`
+quebra clique normal, não só o arrasto.** A primeira versão capturava o
+ponteiro no `pointerdown` (padrão comum pra esse tipo de interação), mas
+capturar o ponteiro faz o navegador reencaminhar o `click` resultante
+pro próprio elemento que capturou (`track`), não pro elemento
+visualmente sob o cursor. `js/video-modal.js` procura `[data-video]` com
+`e.target.closest(...)`, que olha só pra ancestrais — com o clique
+reencaminhado pro `track`, `.media__play` (um descendente) nunca era
+encontrado, e **qualquer clique no carrossel, mesmo sem arrastar nada,
+parava de abrir o vídeo**. Corrigido tirando o `setPointerCapture` e
+movendo `pointermove`/`pointerup` pro `window` em vez do `track` — sem
+precisar de captura, e como bônus o arrasto continua funcionando mesmo
+se o cursor sair da área do carrossel no meio de um gesto rápido.
+
+**Suprimir o clique depois de um arrasto de verdade.** Sem isso, soltar
+o mouse depois de arrastar também dispararia "click" em cima do que
+estivesse embaixo do cursor — abriria o vídeo ou navegaria pro projeto
+só por ter arrastado, sem intenção de clicar em nada. Um limiar de 4px
+de movimento (`moveuDeVerdade`) distingue "foi só um clique" de "foi um
+arrasto"; um listener de `click` em fase de **captura** no `track`
+(roda antes de qualquer handler de clique do próprio slide) cancela o
+evento quando o gesto foi de fato um arrasto.
+
+**Cursor**: `.track { cursor: grab }`, `.track:active { cursor: grabbing }`
+— só affordance visual, não muda o comportamento.
+
+**Bug real encontrado ao verificar isso: `projeto.html` nunca carregava
+`js/carousel-infinite.js`.** Passou despercebido desde a V1.3 (quando
+`js/projeto.js` ganhou a capacidade de montar `.media--carousel` na
+própria página do projeto, ver seção 6) porque `js/media.js` — que
+*está* incluído em `projeto.html` — já cuida das setas e do autoplay
+por visibilidade, então o carrossel *parecia* funcionar. O que faltava,
+sem barulho nenhum (nenhum erro de console), era só o loop infinito
+(clonagem) e a centralização inicial — o carrossel do Spaten, citado
+como referência do que "infinito" deveria parecer, não estava de fato
+infinito até esse ajuste. Corrigido adicionando `<script
+src="js/carousel-infinite.js">` em `projeto.html`, na mesma posição
+relativa (logo depois de `media.js`) que as outras páginas já usam.
+**Regra geral, agora garantida:** todo `.media--carousel` do site, em
+qualquer página, é automaticamente infinito e arrastável — não é algo
+que se ativa por página, é global via
+`document.querySelectorAll('.media--carousel')` em `carousel-
+infinite.js`, carregado (agora) em toda página que pode ter carrossel.
+
+**Setas: só visíveis com o mouse por perto, e por baixo do alvo de
+clique do slide até V1.5 (bug corrigido).** Duas mudanças na V1.5, uma
+de comportamento pedida e um bug real encontrado ao mexer nas setas:
+
+1. **Bug: a seta esquerda não respondia ao clique.** `.arrow` e
+   `.slide__link`/`.media__play` (o alvo de clique invisível que cobre
+   o slide inteiro) empatavam em `z-index: 3` — `.arrow` usava o token
+   `--z-arrow`, o outro par tinha `3` hardcoded. Em empate de
+   `z-index`, quem vem depois no DOM ganha a disputa de empilhamento; e
+   como as setas são declaradas **antes** do `.track` (e de seus
+   slides) no HTML de `js/feed.js`/`js/projeto.js`, o link/botão
+   invisível do slide sempre pintava por cima, interceptando o clique
+   destinado à seta sempre que os dois se sobrepunham visualmente —
+   não só num caso raro, em qualquer carrossel onde a seta ficasse
+   perto o bastante da borda de um slide. Corrigido subindo
+   `--z-arrow` pra `5` em `tokens.css`, bem acima dos dois.
+2. **Setas escondidas por padrão, reveladas no hover do carrossel
+   inteiro** (não da seta em si — ela é pequena demais pra um hover
+   próprio fazer sentido como gatilho). `.media--carousel .arrow {
+   opacity: 0 }`, `.media--carousel:hover .arrow { opacity: 1 }`.
+   Escopado a `.media--carousel .arrow`, não a `.arrow` sozinho — as
+   setas do lightbox de fotos (`.photo-modal__frame .arrow`,
+   `base.css`) são outro contexto (modal, sem gesto de arrastar) e
+   continuam sempre visíveis, sem essa regra. `:focus-within` revela a
+   seta também pra quem navega por teclado — sem isso, ela ficaria
+   focável mas invisível assim que o foco chegasse nela.
+
 **Vídeo tem prioridade sobre poster (V13).** `midiaHTML()` não coloca mais
 `poster="..."` no `<video>` — nunca mostra uma foto estática por cima ou
 no lugar do vídeo em loop. Até o vídeo carregar (ou se ele falhar), quem
@@ -449,7 +618,10 @@ Fica acima do menu no eixo Z — no mockup 3 ele continua legível com o painel 
 - Ao abrir: `--paper` do `body` vira `--hue`, hambúrguer vira X, mídias entram em duotone.
 - Fundo do painel: branco puro (`--panel-bg: #FFFFFF`), não sorteado.
 - Item da página atual não tem sublinhado visual (atributo `aria-current="page"` permanece para acessibilidade).
-- Redes sociais em linha, separadas por `/`, corpo pequeno.
+- Redes sociais: só Instagram (`.social`, V1.2 — antes tinha Vimeo e
+  YouTube também, separados por `/`; removidos a pedido, `href="#"`
+  ainda como placeholder). Com um link só, o separador `/` deixou de
+  fazer sentido e saiu do HTML.
 - **"Diretores" é um botão que revela submenu com nomes.** Clicar em nome navega para página do diretor.
   O botão recebe o mesmo tratamento de hover/foco dos links do menu (linha animada) — não é
   exclusivo de `<a>`, vale para `.menu-toggle` também.
@@ -458,6 +630,13 @@ Fica acima do menu no eixo Z — no mockup 3 ele continua legível com o painel 
   a regra que revela o submenu não pode usar `+` (irmão imediato) — tem que ser `~` (irmão geral),
   senão o submenu nunca aparece mesmo com `aria-expanded="true"`.
 - **"Contato" abre um card**, não um `mailto:` direto (ver "Card de contato" abaixo).
+- **Texto dos itens do menu (`.panel--menu ul a`, `.menu-toggle`,
+  `.submenu a`): `'wdth' 200, 'wght' 900`** (V1.7.7 — era `'wght' 800`,
+  pedido explícito incluindo o submenu "Diretores"). É o mesmo teto do
+  eixo variável usado nas manchetes do site (`.title`,
+  `.diretor-nome`). `.social` (Instagram) e `.submenu-back` ("voltar")
+  ficam de fora de propósito — pedido foi só pros itens de navegação,
+  não pro rodapé de redes sociais nem pro botão de voltar do submenu.
 - Esc fecha o painel inteiro e reseta o submenu.
 - Fecha com Esc e com clique fora.
 - Foco preso dentro do painel enquanto aberto; ao fechar, foco volta ao hambúrguer.
@@ -541,6 +720,102 @@ de "salvar":
 `js/no-download.js` é carregado em toda página que tem mídia (todas,
 menos os painéis puramente textuais) — ver seção 10, estrutura de
 arquivos.
+
+### Transição entre páginas (V1.1, "dip to white" desde V1.1.1)
+
+**"Dip to white"** em qualquer navegação interna — clicar num link do
+menu, num projeto, em "voltar" etc: a página que está saindo dissolve
+pro branco, e só depois o branco dissolve pra página que está entrando.
+Duas animações em sequência (não um crossfade simultâneo), cada uma
+cobrindo metade do tempo total (`--t-page`):
+
+```css
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-image-pair(root) {
+  background-color: #fff;
+}
+
+@keyframes dip-to-white-out { to { opacity: 0; } }
+@keyframes dip-to-white-in { from { opacity: 0; } }
+
+::view-transition-old(root) {
+  animation: dip-to-white-out calc(var(--t-page) / 2) var(--ease-out) both;
+}
+
+::view-transition-new(root) {
+  animation: dip-to-white-in calc(var(--t-page) / 2) var(--ease-out) calc(var(--t-page) / 2) both;
+}
+```
+
+É a **View Transitions API "cross-document"** — pensada exatamente pra
+site multi-página como este (sem SPA, sem router). Por padrão, o
+navegador faz um crossfade simultâneo (página antiga perdendo opacidade
+enquanto a nova ganha, ao mesmo tempo) — a V1.1 usava esse padrão sem
+alterar. A V1.1.1 substitui isso por duas animações independentes: a
+antiga (`::view-transition-old`) só perde opacidade, na primeira metade
+do tempo; a nova (`::view-transition-new`) começa em opacidade `0` e só
+ganha opacidade na segunda metade (via `animation-delay` igual à
+primeira metade) — no meio das duas, com as duas em opacidade zero, o
+que aparece é o `background-color: #fff` do
+`::view-transition-image-pair(root)`, o "branco" do meio do dip. O
+`both` no fill-mode de cada animação é essencial: sem ele, a nova
+apareceria no estado padrão (opacidade 1) durante o delay, em vez de
+ficar invisível esperando sua vez.
+
+**Precisa da regra nas duas pontas** — a página que o usuário está
+saindo E a que está entrando — pro navegador ativar a transição; como
+está em `base.css`, carregado em toda página, toda navegação interna já
+entra automaticamente, sem precisar listar rotas nem marcar links.
+
+**Troca de aba trabalhos/bio do diretor tem o mesmo efeito, mas por
+outro mecanismo (V1.1.1).** Isso não é uma navegação de verdade — é
+hash mudando dentro do mesmo documento (`js/diretor-tabs.js`) — então a
+versão "cross-document" da API descrita acima nunca entra em ação
+sozinha aí; a V1.1 deixou esse caso escapar do fade por esse motivo. A
+correção usa a segunda forma da mesma API,
+`document.startViewTransition()` ("same-document"): mesmos pseudo-
+elementos (`::view-transition-old/new(root)`), mesmo CSS acima, sem
+precisar de nenhuma regra extra — só entra em ação a partir do
+`hashchange` (troca de aba clicada pelo usuário), não no primeiro
+`mostrar()` do carregamento da página, que não precisa de transição
+porque a página inteira acabou de fazer a própria ao navegar até ali.
+
+**Abrir/fechar "quem somos" usa o mesmo truque "same-document" (V1.7)**
+— ver seção 6, "Quem somos". Terceiro uso da mesma API no site (depois
+da navegação entre páginas e da troca de aba do diretor), sempre pelo
+mesmo motivo: a mudança não é uma navegação de verdade, então só a
+versão `document.startViewTransition()` entra em ação.
+
+**Suporte**: Chrome/Edge 126+. Em navegadores sem suporte (Safari,
+Firefox, no momento em que isto foi escrito), a regra é simplesmente
+ignorada — navegação normal, sem transição, sem erro nenhum; e
+`document.startViewTransition` sendo `undefined` faz
+`mostrarComTransicao()` cair no `else` (troca de aba direto, sem
+efeito). É progressive enhancement puro nos dois casos: zero risco de
+quebrar algo pra quem não tem o recurso.
+
+**Movimento reduzido**: `@media (prefers-reduced-motion: reduce)`
+(`layout.css`) desliga a animação das pseudo-elements de transição —
+diferente do resto do site, isso não é coberto pelo
+`* { transition-duration: .01ms !important; }` já existente, porque
+view transitions usam `animation`, não `transition`; o navegador não
+desliga isso sozinho, precisa de uma regra explícita.
+
+**O logo não sofre o dip (V1.2).** `.logo` recebe `view-transition-
+name: logo` (`base.css`), o que tira ele do grupo `root` — que é quem
+passa pelo dip-to-white — e o trata como um elemento persistente,
+pareado entre a página que sai e a que entra (o navegador casa
+elementos com o mesmo `view-transition-name` nos dois lados
+automaticamente). Como o logo é idêntico — mesma posição fixa, mesmo
+texto — em toda página do site, ele já ficaria visualmente parado
+mesmo só com isso; `::view-transition-group/old/new(logo) { animation:
+none !important; }` garante isso de forma explícita, sem depender de
+"por acaso as duas capturas serem iguais". Vale tanto pra navegação
+cross-document quanto pra troca de aba trabalhos/bio (same-document) —
+é o mesmo mecanismo de nomes nos dois casos.
 
 ---
 
@@ -659,6 +934,87 @@ em disputa.") tinha aspas literais no HTML e nenhum destaque tipográfico
 pontuada. A Daniela não tem frase entre aspas, mas ganha o mesmo
 destaque no primeiro parágrafo pra manter as duas bios consistentes.
 
+**A partir da V1.7.5, o modificador `.diretor-bio--destaque` substitui
+esse tratamento — primeiro só em Ricardo, depois (V1.7.10) também em
+Daniela, mesma "formatação" pros dois.** Pedido original (Ricardo):
+"use a mesma fonte (peso, largura e entrelinha) do QUEM SOMOS. Faça o
+box do texto do tamanho da foto e da largura da página. Ajuste a fonte
+para caber." A primeira leitura (V1.7.5) empilhou foto e texto (texto
+embaixo, largura cheia da página) — a referência enviada em seguida
+mostrou que "da largura da página" não queria dizer "em vez de ficar ao
+lado da foto": o layout certo é foto e texto LADO A LADO, como sempre
+foi em `.diretor-bio`, só que com a caixa de texto esticada pra mesma
+altura da foto e a fonte do "quem somos". Corrigido na V1.7.6 ("o texto
+da bio tem que estar ao lado da foto. CRAVE NA REF"). V1.7.10 estendeu
+o mesmo modificador pra Daniela ("APLIQUE A MESMA FORMATACAO DE RICARDO
+RAPOZO"), com texto novo também (removido o parágrafo de abertura
+"Baseada no Reino Unido..."; sobram os 3 parágrafos seguintes).
+Documentação abaixo já reflete a versão corrigida e estendida:
+
+- **Texto atualizado em `ricardo-rapozo.html`/`daniela-luquini.html` E
+  em `time.html`** (mesmo conteúdo nas duas páginas que reproduzem cada
+  bio, pra não divergir), mas o modificador `.diretor-bio--destaque` só
+  vai nos HTMLs das páginas de diretor. `time.html` mantém o layout
+  Newsreader de sempre pros dois, só com o texto atualizado.
+- **Continua o grid de duas colunas herdado de `.diretor-bio`/
+  `.diretor-bio--right`** (`38vw 1fr` pro Ricardo, `1fr 38vw` pra
+  Daniela — o modificador não mexe em `grid-template-columns`, só em
+  `align-items`). **`align-items: stretch`** no lugar do `center`
+  herdado: no grid padrão, os dois itens ficam centralizados na altura
+  NATURAL de cada um (a foto bem mais alta que o texto); com `stretch`,
+  `.bio` estica até a altura da LINHA do grid — que a foto já define,
+  por ser a mais alta. É assim que a caixa de texto vira "do tamanho da
+  foto" ficando ao lado dela, sem nenhum cálculo manual de altura: o
+  próprio grid resolve, pros dois lados (`--right` ou não).
+- **Fonte "ajustada pra caber": `font-size: 2.4vw`, não `clamp()`** —
+  um valor só, compartilhado pelas duas bios ("mesma formatação").
+  Testado via Playwright (busca binária pelo maior `font-size` que
+  ainda cabe na altura da coluna, sem `scrollHeight` estourar
+  `clientHeight`) em seis larguras de tela (1024–2560px) pros DOIS
+  textos: o de Ricardo (2 parágrafos) cabia até ~2.47vw–2.58vw; o de
+  Daniela (3 parágrafos, um pouco mais longo E com uma quebra de
+  parágrafo a mais) cabia só até ~2.44vw. `2.4vw` fica com margem de
+  segurança abaixo do mais apertado dos dois — calibrar pro texto mais
+  longo é o que garante que QUALQUER bio futura com esse modificador
+  também caiba, não só as duas de hoje.
+- **`overflow-y: hidden`, não `auto` (V1.7.10, era `auto` desde a
+  V1.7.5).** Pedido explícito: "não deixe barra de rolagem nos textos
+  da bio." Mesmo com o `font-size` calibrado com margem de segurança,
+  uma barra de rolagem (native do navegador) é um estado visual pior
+  que um corte silencioso de 1-2px que na prática nunca chega a cortar
+  uma linha inteira de texto — `hidden` garante que isso nunca aparece,
+  não importa o navegador/hinting de fonte.
+- **Mesma fonte do "quem somos"**: `font-family: 'Advent Pro'`
+  (explícito aqui porque `.bio` de base usa Newsreader),
+  `font-variation-settings: 'wdth' 200, 'wght' 900`, `line-height: .9`.
+  A regra de epígrafe do primeiro parágrafo (`.diretor-bio .bio
+  p:first-child`) é resetada dentro do modificador (`font-weight/
+  font-size/line-height: inherit`) — sem epígrafe, todos os parágrafos
+  usam o mesmo tratamento tipográfico único.
+- **Mobile (`@media max-width:820px`)**: `.diretor-bio` genérico já
+  vira uma coluna só nesse breakpoint (foto e texto empilham em linhas
+  separadas do grid — `align-items: stretch` do desktop não tem mais
+  efeito de igualar alturas, cada item vira dono da própria linha). Só
+  falta um `font-size` de leitura normal (`clamp(22px, 6vw, 30px)`, não
+  o valor calibrado pra caber ao lado da foto) e a foto ganha
+  `width:100%`, já que não precisa mais bater com a largura de uma
+  caixa de texto ao lado.
+- **Armadilha de mobile só em `--right` (Daniela), achada e corrigida
+  na V1.7.10: `grid-row` não resetado no breakpoint.** O bloco mobile
+  acima sempre resetou `grid-column: 1` pra `.diretor-bio--right .diretor
+  -bio__foto`/`.bio`, mas nunca `grid-row` — e o desktop de
+  `.diretor-bio--right` fixa os dois em `grid-row: 1` (pra ficarem lado
+  a lado, foto na coluna 2). Sem resetar isso, no mobile (uma coluna só)
+  os dois itens continuavam na MESMA célula do grid — foto e texto
+  sobrepostos, cada um influenciando a altura auto do outro via
+  `align-items: stretch`, resultado em uma altura de caixa sem sentido
+  que cortava a maior parte do texto atrás da foto opaca (só a última
+  linha ou parágrafo sobrava visível, dependendo da largura). Ricardo
+  nunca teve esse bug por não usar `--right` (sem `grid-row` fixo pra
+  início de conversa, o auto-placement do grid já colocava foto e bio
+  em linhas separadas). Corrigido com `grid-row: auto` no mesmo lugar
+  onde `grid-column` já era resetado.
+
 **Dados dos diretores** vivem em `js/diretores.js`:
 
 ```js
@@ -674,7 +1030,7 @@ conteúdo real de cada bio está escrito direto no HTML de cada página, não
 puxado daqui; `diretores.js` documenta o formato pretendido pra quando
 isso for automatizado.)
 
-### Página de projeto e modal de vídeo (V7, revisado em V9/V10)
+### Página de projeto (V7, revisado em V9/V10, reformulada por completo em V1.6)
 
 Resolve duas pendências que ficaram em aberto por várias versões: cada
 projeto agora tem página própria (`projeto.html?slug=<slug>`), e o vídeo
@@ -682,85 +1038,186 @@ projeto agora tem página própria (`projeto.html?slug=<slug>`), e o vídeo
 
 **`projeto.html` é um template só**, não uma página por projeto — segue o
 mesmo princípio de tudo aqui: nada escrito à mão. `js/projeto.js` lê
-`?slug=` da URL, busca o projeto em `window.PROJETOS` e monta, **nesta
-ordem** (V9):
+`?slug=` da URL e busca o projeto em `window.PROJETOS`.
 
-1. Título + mídia ambiente juntos dentro de `.block__main` — mesmo
-   agrupamento da home (ver "Título preso no scroll" acima). É esse
-   agrupamento, não uma regra CSS isolada, que faz o título ficar "atrás"
-   da mídia ao rolar e parar de grudar assim que `.block__main` termina.
-   A mídia é clicável, sem ícone, se o projeto tiver campo `video` (ver
-   "Vídeo sem ícone" abaixo).
-2. Galeria de fotos em grade 3 colunas (`.galeria-fotos`, 2 no mobile),
-   **fora** de `.block__main`, como item irmão — a partir do array
-   `galeria` do projeto, `object-fit: cover` (exceção deliberada à regra
-   de nunca recortar a peça do cliente: aqui são fotos de registro numa
-   grade uniforme, não a peça principal).
+**V1.6: reformulação completa, a partir de referência visual.** Da V7 à
+V1.5, a página de projeto reaproveitava a "linguagem" da home: título
+grande + mídia ambiente clicável (abrindo o vídeo de verdade num modal)
++ grade de fotos abaixo. A V1.6 troca isso tudo por duas peças só:
 
-**V8 tinha colocado o título por último**, com `position: static`, porque
-sem o agrupamento em `.block__main` o sticky do título ficava com alcance
-igual ao `<article>` inteiro — cobrindo a galeria de fotos embaixo dele o
-tempo todo em que ela estivesse na tela. **V9 corrigiu isso na raiz**: o
-título voltou pro topo, e o agrupamento em `.block__main` (igual à home)
-restringe o sticky à altura do próprio par título+mídia, sem precisar
-desligar o efeito.
+1. **Barra fixa no topo no desktop** (`.projeto-barra`), centralizada,
+   na mesma linha do logo/hambúrguer (`top: 18px`), texto transparente
+   (sem fundo próprio — um patch chegou a dar fundo em pílula pra
+   resolver contraste sobre o vídeo, mas foi revertido: "erro meu",
+   segundo o próprio pedido) — `[Diretor]: [Título do projeto]`,
+   inteira em Newsreader. O nome do diretor é link pra página dele
+   (`<slug>.html`, resolvido via `window.DIRETORES` — `js/diretores.js`
+   agora carregado também em `projeto.html`, só pra isso), sempre
+   sublinhado — não só no hover/foco como o resto dos links do site;
+   exceção deliberada, pedida pra esse componente especificamente.
+   `max-width: min(60vw, 640px)` com `white-space: nowrap` +
+   `text-overflow: ellipsis` evita colisão com logo/hambúrguer em
+   título longo ou tela estreita, truncando em vez de quebrar linha ou
+   invadir os dois.
 
-O `<article>` usa uma classe própria, `.bloco-projeto`: coluna única
-(`grid-template-columns: 1fr`), sem a divisão bloco+coluna vazia da home —
-não faz sentido alternar lado numa página sobre um projeto só.
+   **No mobile (≤820px), vira uma faixa branca fixa no rodapé, com o
+   mesmo limite de `.projeto-voltar` (patch).** Pedido explícito:
+   "quando vamos para a versão mobile, o [diretor][título] vão para uma
+   barra branca fixa no rodapé. Que tem limite com o rodapé padrão da
+   página." Mesmo truque de `position: sticky` limitado pela caixa do
+   pai (ver "Link 'voltar'" logo abaixo) — só que agora `.projeto-barra`
+   TAMBÉM precisa ser filha direta de `.projeto-corpo`, não mais neta
+   dentro de `<main>`, pra esse alcance funcionar. Por isso ela deixou
+   de nascer dentro do `html` que `js/projeto.js` escreve em
+   `main.innerHTML`: agora é HTML estático em `projeto.html`
+   (`#projeto-barra`, `<p>` vazio, irmã de `<main>` e de
+   `.projeto-voltar`), e `render()` só preenche `barra.innerHTML`. No
+   breakpoint mobile, `.projeto-barra` troca `position: fixed; top` por
+   `position: sticky; bottom: 0`, ganha `width: 100%` e fundo
+   `var(--paper)`; `.projeto-voltar` sobe (`bottom: 70px`, estimativa da
+   altura da faixa nova) pra não ficar embaixo dela — as duas continuam
+   `position: sticky` **independentes**, cada uma limitada por
+   `.projeto-corpo`, então nenhuma das duas nunca invade o rodapé.
+2. **O vídeo de verdade toca direto, sem clique nenhum no meio do
+   caminho.** Não é mais a mídia ambiente (loop mudo) esperando um
+   clique pra abrir um modal — `js/projeto.js` converte `p.video`
+   direto num `<iframe>` (YouTube/Vimeo) ou `<video>` (mp4 local) com
+   autoplay, dentro de `.projeto-video`.
 
-**Vídeo sem ícone (V8).** O botão de play visível foi removido — nenhuma
-"janela" (bloco da home, galeria de diretor, página de projeto) mostra
-mais o ícone. Onde o projeto tem campo `video`, a mídia inteira continua
-clicável e abre o mesmo modal — só não há indicação visual, apenas cursor
-e foco de teclado (`.media__play:focus-visible`, com o mesmo truque de
-`mix-blend-mode: difference` das setas, pra aparecer sobre qualquer
-mídia). O ícone de galeria ao lado do título também foi removido nessa
-mesma leva (ver "Ícone de galeria" acima) — o título é o único acesso à
-página do projeto.
+**O que saiu da página de projeto nessa reformulação** — mas continua
+existindo e em uso na home/galeria de diretor, só não mais aqui, então
+nada foi apagado do site, só parou de aparecer nesse template
+específico: título como `<h1 class="title">`; o agrupamento
+`.block__main` e o truque de "título preso no scroll" (não fazia mais
+sentido sem um título grande pra prender); `.bloco-projeto`; a mídia
+ambiente clicável abrindo modal (`js/video-modal.js` continua existindo
+e sendo acionado a partir da home/galeria de diretor — só a própria
+página do projeto parou de carregar esse script); o carrossel de
+`midia` no topo (V1.3 — deixou de fazer sentido sem a mídia ambiente,
+já que agora só existe UM vídeo de verdade por projeto, não vários
+cortes de loop pra escolher).
 
-**Carrossel de fotos da galeria (V8).** Clicar numa foto de
-`.galeria-fotos` abre `js/photo-modal.js`: um lightbox com as mesmas setas
-do carrossel da home, navegando entre as fotos daquela galeria (Esc,
-←/→, clique fora fecham). Ele lê a lista de fotos direto do DOM (todas as
-`<img>` da `.galeria-fotos` clicada) em vez de `projetos.json` — não
-precisa saber qual projeto está aberto, só qual grade foi clicada.
+**A grade de fotos voltou logo depois, num patch na mesma versão.** A
+V1.6 original também tinha tirado `.galeria-fotos` e seu lightbox
+(`js/photo-modal.js`) da página de projeto — pedido explícito trouxe os
+dois de volta, abaixo do vídeo, quando `p.galeria` não está vazio (o
+dado nunca saiu de `projetos.json`; só a leitura em `js/projeto.js`
+tinha sido removida por uma leva, e voltou). Diferença desse retorno em
+relação a como era antes da V1.6: o **lightbox agora abre com fundo
+branco** (`var(--paper)`, não mais `rgba(0,0,0,.92)` de cinema — ver
+`.photo-modal` em `base.css`), pedido explícito, e **o logo continua
+visível** enquanto ele está aberto. Isso introduziu uma classe própria,
+`is-photo-open` — e num patch seguinte (ver "Modal de vídeo" abaixo), o
+modal de vídeo passou a usar a mesma classe e o mesmo tratamento de
+fundo, então os dois lightboxes do site hoje se comportam de forma
+idêntica nesse aspecto.
 
-**Modal de vídeo** (`js/video-modal.js`, `.video-modal` no HTML de cada
-página) é **deliberadamente separado** do sistema de painel de
-`js/panel.js`, pelo mesmo motivo do modal de fotos. Diferenças de
-propósito, não só de código:
+**Vídeo com som, de propósito (patch — revertendo uma decisão
+anterior).** A V1.6 original tinha deixado o vídeo mudo, por uma leitura
+de que autoplay com som não seria permitido sem gesto do usuário. Pedido
+explícito corrigiu isso: "quando entramos na página e o vídeo dá
+autoplay ele VEM COM SOM ATIVADO". `js/projeto.js` não acrescenta mais
+`&mute=1`/`&muted=1`/`muted` — o autoplay é pedido com som desde o
+início. Isso não garante 100% dos casos (a política de autoplay de cada
+navegador ainda decide se aceita ou recusa autoplay com som, geralmente
+com base no "engajamento de mídia" que aquele domínio já tem pro
+visitante), mas a intenção do código agora é sempre pedir com som — não
+mais mudar isso preventivamente.
 
-- Fundo preto de cinema fixo, não a cor sorteada da sessão — assistir
-  vídeo não deve competir com o efeito de cor do site.
+**`urlDeEmbed()` promovida pra `js/helpers.js` (V1.6)** — antes vivia
+só dentro de `js/video-modal.js`; agora `js/projeto.js` também precisa
+da mesma conversão de link (YouTube/Vimeo → URL de embed) pro vídeo
+inline, então virou função compartilhada (`window.VulpesHelpers.
+urlDeEmbed`) em vez de duas cópias da mesma regex arriscando desalinhar
+uma da outra com o tempo.
+
+**Link "voltar", fixo até o rodapé (V1.2, refeito em V1.3, lado trocado
+em V1.3.2).** A V1.2 tinha isso como um link em fluxo normal no fim da
+página, canto direito, igual ao `.diretor-voltar`. A V1.3 pediu outra
+coisa: acompanhando a rolagem como um botão flutuante fixo (primeiro no
+canto inferior esquerdo; a V1.3.2 trocou pro **direito** — só
+`text-align` muda, o mecanismo de sticky é o mesmo), mas sem nunca
+sobrepor o rodapé — "o limite desse botão é o rodapé". Isso é
+`position: sticky` puro, sem JS: `<p class="projeto-
+voltar">` vive dentro de um wrapper, `<div class="projeto-corpo">`, que
+envolve `<main id="conteudo-projeto">` **e** o próprio link, terminando
+exatamente onde o `<footer>` começa. O "alcance" de um elemento sticky
+é limitado pela caixa do PAI dele — então o link flutua a `bottom: 24px`
+enquanto `.projeto-corpo` ainda está passando pela tela, e para de
+acompanhar assim que a rolagem ultrapassa o fim dele, sem nunca invadir
+o rodapé. Sem esse wrapper (ou seja, como irmão direto do `<footer>`,
+que era a estrutura da V1.2), o alcance seria o `<body>` inteiro e o
+link continuaria grudado por cima do próprio rodapé.
+
+O wrapper não precisa de nenhuma mudança em `js/projeto.js`: `<main>`
+continua 100% escrito por JS (`main.innerHTML = html`, que nunca toca
+nos irmãos dele), e o link continua HTML estático em `projeto.html`,
+só que agora dentro do wrapper em vez de solto entre `<main>` e
+`<footer>`.
+
+**Cuidado se mexer aqui:** como `<p>` é um elemento de bloco, a caixa
+dele ocupa a largura inteira mesmo com o texto alinhado à direita —
+sem `pointer-events: none` no `<p>` (e `auto` só no `<a>` de dentro),
+a área vazia e transparente à esquerda do link bloquearia clique no
+que estivesse por baixo dele sempre que estivesse "grudado" pela
+rolagem, mesmo sem nada visível ali.
+
+**Modal de vídeo** (`js/video-modal.js`, `.video-modal` no HTML das
+páginas que ainda o incluem) é **deliberadamente separado** do sistema
+de painel de `js/panel.js`, pelo mesmo motivo do modal de fotos.
+Diferenças de propósito, não só de código:
+
+- Fundo fixo próprio, não a cor sorteada da sessão — assistir vídeo não
+  deve competir com o efeito de cor do site. **Branco (`var(--paper)`),
+  não mais preto de cinema (patch)** — pedido explícito: "o lightbox
+  dos vídeos na página de portfólio também devem ser brancos", pra
+  ficar consistente com o lightbox de fotos, que já tinha ganhado fundo
+  branco antes.
 - Conteúdo dinâmico por clique (URL do vídeo muda a cada abertura),
   enquanto os painéis têm HTML fixo.
-- Qualquer elemento com `[data-video="<url>"]` abre o modal — usado tanto
-  na home/galeria de diretor quanto na página de projeto.
+- Qualquer elemento com `[data-video="<url>"]` abre o modal.
+
+**Desde a V1.6, `projeto.html` não carrega mais `js/video-modal.js`
+nem tem `#video-modal` no HTML** — a própria página do projeto não abre
+o modal de vídeo (o vídeo já toca direto, ver acima). Esse modal
+continua vivo e em uso na home e na galeria de diretor
+(`index.html`, `ricardo-rapozo.html`, `daniela-luquini.html`,
+`time.html`), onde a mídia ainda é o loop ambiente clicável.
+`js/photo-modal.js` e `#photo-modal`, por outro lado, **voltaram pra
+`projeto.html`** num patch logo depois da reformulação (ver "A grade de
+fotos voltou..." acima) — a própria página do projeto é, de novo, a
+única que os usa (a galeria de fotos nunca existiu na home/galeria de
+diretor).
 
 O campo `video` no projeto aceita link do YouTube (`youtu.be/...` ou
 `youtube.com/watch?v=...`), **do Vimeo (`vimeo.com/<id>`, V10)** ou
-caminho de mp4 local. `urlDeEmbed()` (renomeada de `idDoYoutube()` na V10,
-quando ganhou o Vimeo) reconhece a plataforma por regex e injeta um
-`<iframe>` do embed correto (`youtube.com/embed/<id>` ou
-`player.vimeo.com/video/<id>`) com autoplay; qualquer outra URL vira
-`<video controls autoplay>`. Fechar o modal esvazia
-`.video-modal__frame` — é isso que para o áudio/vídeo, não só escondê-lo.
+caminho de mp4 local. `urlDeEmbed()` (renomeada de `idDoYoutube()` na
+V10, quando ganhou o Vimeo; movida de `js/video-modal.js` pra
+`js/helpers.js` na V1.6, ver acima) reconhece a plataforma por regex e
+retorna a URL de embed correta (`youtube.com/embed/<id>` ou
+`player.vimeo.com/video/<id>`) com autoplay; qualquer outra URL faz
+quem chama montar um `<video controls autoplay>`. No modal, fechar
+esvazia `.video-modal__frame` — é isso que para o áudio/vídeo, não só
+escondê-lo.
 
-**Logo e hambúrguer somem durante a visualização (V11).** Tanto o modal de
-vídeo quanto o lightbox de fotos ficam com seu botão "fechar" fixo em
-`top: 18px; right: var(--gutter)` — exatamente onde o `.burger` também
-fica. Sem tratamento, os dois ficavam sobrepostos, competindo por clique e
-por foco de teclado. `js/video-modal.js` e `js/photo-modal.js` agora
-adicionam `is-lightbox-open` no `<html>` ao abrir (e removem ao fechar);
-`html.is-lightbox-open .logo, html.is-lightbox-open .burger { display:
-none; }` em `css/base.css` esconde os dois. Só "fechar" fica acessível
-enquanto o vídeo ou a foto estão em tela — a mesma classe serve pros dois
-modais porque o problema e a solução são idênticos nos dois.
+**Só o hambúrguer some durante qualquer um dos dois modais (V11,
+revisado no patch do fundo branco).** Os dois têm seu botão "fechar"
+fixo em `top: 18px; right: var(--gutter)` — exatamente onde o
+`.burger` também fica; sem escondê-lo, os dois ficariam sobrepostos,
+competindo por clique e por foco de teclado. O logo (canto oposto, sem
+conflito de posição nenhum) fica sempre visível nos dois — antes,
+`js/video-modal.js` escondia logo E hambúrguer (`is-lightbox-open`,
+estética do modo cinema, fundo preto); quando o modal de vídeo também
+ganhou fundo branco, não sobrou motivo pra continuar escondendo o
+logo, e `js/video-modal.js` passou a usar a mesma classe que
+`js/photo-modal.js` já usava, `is-photo-open` (esconde só o
+hambúrguer). Hoje os dois modais usam exatamente a mesma classe e o
+mesmo comportamento de chrome — `is-lightbox-open` ficou sem nenhum
+uso no site. Ver `css/base.css`.
 
 `js/helpers.js` existe porque `feed.js` (home + galeria de diretor) e
-`projeto.js` (página de projeto) precisam das mesmas funções `escapar` e
-`midiaHTML` — extraídas pra não duplicar.
+`projeto.js` (página de projeto) precisam das mesmas funções —
+`escapar`, `midiaHTML` e, desde a V1.6, `urlDeEmbed`.
 
 ### Nosso time
 
@@ -771,8 +1228,13 @@ as que têm seus trabalhos.
 
 ### Quem somos
 
-Barra que sobe do rodapé cobrindo 2/3 da tela. Abre `.is-overlay-open`, então
-o fundo inunda de cor e as mídias visíveis no terço superior entram em duotone.
+**V1.7: virou card centralizado**, mesmo princípio do card de contato
+(mesmo `top:50%; left:50%; transform:translate(-50%,-50%)`, só que bem
+maior) — não sobe mais do rodapé cobrindo 2/3 da tela, era assim desde
+sempre até aqui. Abre `.is-overlay-open` igual aos outros dois painéis,
+então o fundo (e tudo que participa do duotone, seção 2) inunda de cor
+por baixo/ao redor do card — o card em si é branco (`var(--panel-bg)`),
+por cima da cor, não afetado por ela.
 
 Mesma cor da sessão que o menu. Abrir o menu, fechar, abrir o quem somos —
 a cor é a mesma. Ela pertence à visita, não ao painel.
@@ -782,27 +1244,97 @@ contato), não componentes separados:
 
 | | menu | quem somos | contato |
 |---|---|---|---|
-| origem | topo | rodapé | centro (card) |
-| altura | natural | natural | natural |
-| conteúdo | navegação + redes | logo + texto | local, e-mail, telefone |
+| origem | topo | centro (card, V1.7) | centro (card) |
+| altura | natural | natural, `max-height:85vh` | natural |
+| conteúdo | navegação + redes | texto + logo | local, e-mail |
+| entrada/saída | `transform` deslizando | `opacity` (fade puro, V1.7.8) | `transform` + `opacity` |
 
 Altura de "quem somos" era fixa (`66vh` no desktop, `100vh` no mobile) até
-a V9 — virou `height: auto` nos dois casos, pra barra crescer só o
-necessário pro logo + texto, sem vão vazio.
+a V9 — virou `height: auto`, pra barra crescer só o necessário pro
+conteúdo. Com o card centralizado da V1.7, ganhou também `max-height:
+85vh` + `overflow-y: auto` — texto grande poderia, em telas baixas,
+ultrapassar a altura da viewport; sem isso o conteúdo vazaria pra fora
+do card.
 
 Comportamento idêntico nos três: fecha com Esc e com clique fora, prende o foco
 enquanto aberto, devolve o foco ao gatilho ao fechar, `aria-expanded`, `inert`
 no conteúdo atrás, e todos disparam `.is-overlay-open` (cor de fundo sorteada
 da sessão + duotone nas mídias visíveis).
 
+**Entrada/saída: fade simples de `opacity`, não mais dip to white
+(V1.7.8, revertendo a V1.7).** A V1.7 tinha trocado a entrada/saída do
+"quem somos" pra reaproveitar o dip-to-white das transições de página
+(seção 5) via `document.startViewTransition()` (versão "same-document"
+da API, mesmo truque de `js/diretor-tabs.js` pra troca de aba). Pedido
+explícito reverteu isso: "retire animação DIP TO WHITE do QUEM SOMOS...
+entra o card QUEM SOMOS. FADE IN FADE OUT NORMAL." `js/panel.js` voltou
+a chamar `aplicar()` direto, sem `startViewTransition()` nenhum — a
+função `usaDip()` que decidia qual painel usava qual caminho foi
+removida (não sobrou nenhum painel que precise dela). `.panel--about`
+(`css/base.css`) ganhou de volta uma `transition: opacity var(--t-panel)
+var(--ease-out)` própria — sem `scale` nem `transform` na lista de
+propriedades animadas, só opacidade, mais simples que
+`.panel--contact` (que anima `transform: scale()` junto). O efeito de
+cor (`is-overlay-open`, fundo + duotone) nunca dependeu da animação de
+entrada/saída de painel nenhuma — continua idêntico nas três variantes,
+como sempre foi.
+
+**Abrir "quem somos" espera o painel anterior recolher de verdade antes
+de começar o fade, 480ms em vez dos 120ms padrão (V1.7.9).** Menu e
+contato trocam entre si com uma sobreposição fixa de 120ms
+(`js/panel.js`, função `abrir()`) — o painel que sai começa a sumir,
+120ms depois o que entra começa a aparecer, os dois se cruzando no
+meio; existe assim de propósito, senão a tela fica vazia por um
+instante e o corte parece erro de carregamento. Pro card de "quem
+somos" isso ficava ruim: como ele é enorme (90vw), enquanto ainda
+semitransparente (opacity baixo, em pleno fade) dava pra ver o
+CONTEÚDO da página por trás — fotos, títulos — através dele, ao mesmo
+tempo em que o menu ainda estava visivelmente deslizando pra fora. Os
+dois movimentos se misturavam num "fantasma" que lia como se o fundo
+também estivesse animando, quando na verdade era só o card
+semitransparente revelando a página atrás dele. Pedido explícito: "a
+barra do menu se recolhe E o card aparece com fade in" — sequência
+limpa, um depois do outro, não sobreposto. `abrir()` agora usa
+`var espera = painel === about ? 480 : 120` — 480ms é a mesma duração
+de `--t-panel` (tokens.css), ou seja, espera o menu terminar de
+deslizar pra fora ANTES de adicionar `is-open` no card. Só pra abrir
+`about`; menu↔contato (e fechar, em qualquer painel) continuam com o
+comportamento de sempre.
+
+**Armadilha encontrada e corrigida no processo: `.panel.is-open {
+transform: translateY(0) }` (regra genérica, duas classes,
+especificidade 0-2-0) vence `.panel--about` sozinho (uma classe,
+0-1-0).** A primeira versão do card centralizado só declarava
+`transform: translate(-50%,-50%)` em `.panel--about` (fechado); assim
+que `.is-open` entrava, a regra genérica tomava a frente e resetava
+pra `translateY(0)`, cancelando a centralização — o card ia parar com
+a borda esquerda grudada no centro horizontal da tela, esticando pra
+fora da viewport pela direita. Sintoma indireto: o botão "fechar"
+ficava fora da área clicável/visível, porque ele é `position:absolute`
+ancorado no próprio card. Corrigido do mesmo jeito que
+`.panel--contact.is-open` já fazia (e que a V1.7 quase repetiu o
+descuido de não copiar): redeclarar `transform: translate(-50%,-50%)`
+também em `.panel--about.is-open`, com especificidade igual à regra
+genérica (0-2-0) e depois dela no arquivo — desempate por ordem de
+declaração a favor do mais específico ao componente.
+
 ### Card de contato
 
 Item "Contato" do menu não é mais um `mailto:` direto — abre um card
 centralizado (`.panel--contact`), a terceira variante do painel. Ao invés de
 descer do topo ou subir do rodapé, ele nasce do centro com `scale` + `opacity`
-em vez de `translateY`. Conteúdo: cidade/país, e-mail (`mailto:`) e telefone
-(`tel:`). Mesmo efeito de cor de fundo dos outros painéis, porque participa do
-mesmo array `paineis` em `js/panel.js` — nenhum código novo de foco/Esc/clique-fora
+em vez de `translateY`. Conteúdo: cidade/país e e-mail (`mailto:`) — telefone
+removido na V1.7.11 (pedido explícito, "retire o telefone do card de
+CONTATO"; o `<p class="contact-card__item">` com `tel:+5511994780379`
+saiu do HTML das 5 páginas, nada mudou em CSS/JS, já que `.contact-
+card__item` estiliza qualquer quantidade de itens igual). **`São
+Paulo/SP, Brasil`, com o `/SP` (V1.7.12)** — era só `São Paulo,
+Brasil`; pedido explícito pra desambiguar a cidade (São Paulo capital)
+do estado (SP), mesmo formato que o rodapé já usa ("São Paulo/SP -
+Brasil", ver seção 8), só que com vírgula em vez de traço, pontuação
+que o card já tinha antes do patch. Mesmo efeito de cor de fundo dos
+outros painéis, porque participa do mesmo array `paineis` em
+`js/panel.js` — nenhum código novo de foco/Esc/clique-fora
 foi necessário.
 
 A abertura de painéis por `data-abre` é genérica: o valor do atributo é o `id`
@@ -810,35 +1342,81 @@ do painel-alvo (`data-abre="quem-somos"` → `#quem-somos`, `data-abre="contato"
 → `#contato`). Um item de menu novo que abre painel não pede alteração em
 `panel.js`, só a marcação `data-abre="<id>"` no HTML.
 
-**Logo e "fechar" (V7, redesenhado em V12, V13 e V0.13.1).** V7 pôs o logo
-quadrado (`vulpesFilmes-LOGO-1x1.png`) ao lado do texto, num flex row —
-um wordmark largo e baixo ao lado de um bloco de texto alto e estreito
-não tinha equilíbrio nenhum. V12 trocou pelo logo horizontal
-(`vulpesFilmes-LOGO-HORIZONTAL.png`, 1791×772) e empilhou tudo numa
-coluna única (logo como banner no topo, texto abaixo). V13 voltou lado a
-lado a partir de uma referência visual, mas errou a proporção: logo
-pequeno (`clamp(220px, 20vw, 320px)`, uns 53% da largura do texto) e todo
-o bloco flush no gutter — a referência mostrava um logo quase do mesmo
-tamanho do texto (~85%) e o conjunto **centralizado no painel**, não
-alinhado ao gutter como o resto do site. **V0.13.1 corrigiu as duas
-medidas**, comparando pixel a pixel com a referência: logo maior
-(`clamp(260px, 30vw, 460px)`) e `.about-content` com `max-width: 1180px`
-+ `margin-inline: auto` pra centralizar o conjunto logo+texto no painel.
-`align-items: center` (vertical) e `flex-wrap` (responsivo) continuam
-como em V13.
+**Logo e "fechar": histórico até V0.13.1, layout novo na V1.7.** V7 pôs
+o logo quadrado (`vulpesFilmes-LOGO-1x1.png`) ao lado do texto, num flex
+row. V12 trocou pelo logo horizontal (`vulpesFilmes-LOGO-HORIZONTAL.png`,
+1791×772) e empilhou numa coluna (logo no topo, texto abaixo). V13
+voltou lado a lado, errando a proporção (logo pequeno, ~53% da largura
+do texto, tudo flush no gutter); **V0.13.1 corrigiu**, comparando pixel
+a pixel com a referência da época: logo maior (~85% do texto) e o
+conjunto centralizado no painel, não no gutter. Essa disposição "lado a
+lado" durou de V0.13.1 até a V1.6.x.
 
-O botão "fechar" mudou de lugar em V12 e continua assim: antes ficava em
-fluxo normal, sozinho acima do logo à esquerda; agora é `position:
-absolute; top: 18px; right: var(--gutter)` **dentro do painel** (que já é
-`position: fixed`, então o absolute ancora nele, não no viewport) — canto
-superior direito do painel, não da página, já que "quem somos" só cobre a
-parte de baixo da tela.
+**V1.7 muda de novo, a partir de nova referência visual**: texto em
+cima, logo embaixo — os dois centralizados, numa coluna
+(`.about-content { display:flex; flex-direction:column; align-items:
+center; text-align:center; }`), não mais lado a lado. Ordem invertida
+direto no HTML (parágrafos antes da `<img>` do logo), não via CSS
+`order` — assim a ordem de leitura por teclado/leitor de tela já bate
+com a ordem visual, sem precisar de nenhum ajuste de tabindex. Logo
+menor que antes do layout em coluna, mas não pequeno: **`clamp(220px,
+22vw, 400px)`** — cerca de 31% da largura do card, a mesma proporção
+medida na referência (a primeira versão da V1.7 tinha errado essa
+medida por baixo, `clamp(160px, 14vw, 220px)`, ~17% do card; corrigido
+num patch logo depois, comparando a proporção com a referência,
+o mesmo tipo de erro e correção que a V0.13.1 já tinha passado antes,
+só que agora com o logo pequeno demais em vez de desproporcional ao
+texto).
 
-**Transição a partir do menu.** "Quem somos" é item do menu. Ao clicar: o menu
-recolhe para o topo e a barra sobe do rodapé. Os dois movimentos se sobrepõem
-(o de saída começa e o de entrada entra em ~120ms), senão a tela fica vazia no
-meio e o corte parece um erro de carregamento. `.is-overlay-open` permanece
-ativo o tempo todo — a cor não pisca entre um painel e outro.
+**Logo vira link pro feed do portfólio (V1.7.12).** Pedido explícito:
+"ao clicar no logo do card QUEM SOMOS, voltamos para o FEED do
+portfolio." A `<img class="about-content__logo">` agora vive dentro de
+`<a class="about-content__logo-link" href="./" aria-label="Voltar para
+o portfólio">` — mesmo destino (`./`) do `.logo` fixo do cabeçalho, em
+todas as 5 páginas. `.about-content__logo-link { display: block; }` só
+deixa explícito o comportamento que o link já teria por ser filho
+direto de um flex container (blockificado automaticamente); nenhuma
+outra regra precisou mudar, o `width`/`aspect-ratio` do logo continuam
+na própria `<img>`. Como é uma navegação de verdade (`href`, não
+`data-abre`), funciona igual em qualquer página — inclusive de volta
+pra ela mesma, se já estiver no feed (`index.html`), recarregando a
+página como qualquer link normal.
+
+O botão "fechar" continua `position: absolute; top: 18px; right:
+var(--gutter)` **dentro do painel** (V12) — com o painel virando card
+centralizado na V1.7 em vez de faixa no rodapé, esse posicionamento
+relativo ao próprio painel (não ao viewport) passou a ancorar no canto
+superior direito do CARD, não mais da faixa inferior da tela; a regra
+em si não precisou mudar, só o contexto ao redor dela.
+
+**Botão vira "×" (patch V1.7.3) — deixou de ser o único painel com texto
+"fechar".** Pedido explícito: "substitua o FECHAR por um X". Marcação
+trocou de `<button class="close" data-fecha>fechar</button>` (ou `<a
+class="close" data-fecha>fechar</a>` em `time.html`, inconsistência de
+tag pré-existente, mantida) para `<button type="button" class="close
+close--x" data-fecha aria-label="Fechar">&times;</button>` nas 5
+páginas — o texto visível vira o glifo `×`, mas `aria-label="Fechar"`
+preserva o rótulo por extenso pra leitor de tela, já que `&times;`
+sozinho não é um texto acessível confiável. `.close--x` reseta o
+sublinhado (herdado de `.panel--about .close, .panel--contact .close`)
+e aumenta a fonte pra `32px`, peso/largura de volta ao padrão do body
+(`'wdth' 100, 'wght' 400`) — um símbolo não pede o mesmo tratamento
+tipográfico de um link de texto.
+
+**Mesma armadilha de especificidade da V1.7, terceira vez que aparece
+no projeto.** Primeira tentativa declarou `.close--x { text-decoration:
+none; font-size: 32px; ... }` sozinha (uma classe, 0-1-0) — perdia pra
+`.panel--about .close, .panel--contact .close { text-decoration:
+underline; font-size: 19px; }` (duas classes, 0-2-0), que aparece depois
+no arquivo. Resultado: o "×" saía sublinhado e do tamanho do texto
+"fechar" antigo, apesar da regra nova existir. Corrigido reescopando
+pra `.panel--about .close--x` (duas classes, mesma especificidade da
+regra genérica, e depois dela no arquivo) — o mesmo padrão de bug (e
+o mesmo tipo de correção) da armadilha `.panel.is-open`/`.panel--about`
+descrita acima. Vale registrar como alerta permanente: qualquer override
+de `.close` dentro de um painel específico precisa nascer com
+especificidade igual ou maior que `.panel--about .close, .panel--contact
+.close`, nunca como classe solta.
 
 **Texto — real desde V11** (era lorem ipsum provisório antes disso):
 
@@ -850,10 +1428,45 @@ ativo o tempo todo — a cor não pisca entre um painel e outro.
 > ele pede, juntando olhar criativo, repertório e precisão técnica para
 > transformar uma boa ideia em algo que realmente mereça ser visto.
 
-Corpo do texto: **Newsreader**, `wdth` não variável, peso 400, `clamp(16px, 1.5vw, 20px)`,
-entrelinha 1.5, largura máxima 52ch. A Newsreader é exclusiva de parágrafos
-(`.bio` e `.panel--about .prose`); títulos, menu, créditos, rodapé e botões
-continuam em Advent Pro.
+**Corpo do texto: Advent Pro desde a V1.7**, não mais Newsreader — outra
+mudança da mesma referência visual ("CRAVE A REFERÊNCIA"): esse painel
+virou destaque tipográfico grande e centralizado, não mais leitura
+corrida discreta em serif (`clamp(16px, 1.5vw, 20px)`, entrelinha 1.5,
+à esquerda, 52ch) — o tratamento que tinha desde a V11. A Newsreader
+não desapareceu do site: continua em `.bio` e no cartão de contato
+(`.contact-card__item`) — só deixou de ser a fonte do "quem somos".
+
+**`'wdth' 200, 'wght' 900` (patch — era `175`/`700` na primeira versão
+da V1.7).** Os dois no teto do eixo variável da Advent Pro — mesmo
+tratamento das manchetes mais pesadas do site (`.title`,
+`.diretor-nome`). A primeira versão tinha ficado aquém do pedido
+original ("faça o texto ter largura 200 e peso 900"): nem a largura
+nem o peso estavam no máximo do eixo, o que deixava o texto visualmente
+mais estreito e mais fino do que a referência mostrava.
+
+**`line-height: .9` (patch — era `1.25`).** "Observe o espaçamento
+entre as linhas. Diminua, eles devem praticamente se tocar. Eu quero
+um BOLO DE TEXTO." `1.25` era o resquício do tratamento de leitura
+corrida de antes (serif, corpo pequeno) — grande demais pra um bloco
+de texto grande e peso 900 querendo ler como massa compacta, não como
+parágrafo espaçado. `.9` é mais apertado até que `.diretor-nome`/
+`.title` (`.94`/`.98`), que já são as entrelinhas mais justas do resto
+do site — esse painel pede um aperto ainda maior, de propósito.
+`margin-top` entre parágrafos também desceu, de `1em` pra `.5em`: com
+a entrelinha tão mais justa, a folga antiga entre um parágrafo e outro
+ficaria desproporcionalmente grande perto do espaço quase nulo dentro
+de cada parágrafo. `font-size: clamp(22px, 2.6vw, 38px)`,
+`text-align:center`, `max-width: min(900px, 80%)` — esses não mudaram
+nos dois patches.
+
+**Card testado menor na V1.7.3, revertido na V1.7.4.** V1.7.3 encolheu
+pra `width: min(900px, 85vw)` ("DIMINUA O box branco"), mas o resultado
+não agradou visualmente ("a diminuição do box não ficou boa") — V1.7.4
+devolveu ao tamanho de sempre, `width: min(1300px, 90vw)`, com o padding
+também de volta a `calc(var(--gutter) * 1.6) var(--gutter)
+calc(var(--gutter) * 1.4)`. Fica registrado que o tamanho menor já foi
+tentado e rejeitado, pra não repetir a mesma tentativa sem necessidade
+num patch futuro.
 
 ---
 
@@ -915,21 +1528,46 @@ transições de cor e duotone. O menu ainda funciona, só troca de estado sem an
 
 Componente presente em todas as páginas, ao fim de `<main>`.
 
-**Conteúdo:**
+**Conteúdo, em duas linhas (V1.3.3 — antes eram três, um `<p>` por
+frase):**
 
-- `© 2026 vulpesfilmes`
-- `contato@vulpesfilmes.com` — link `mailto:`
-- `São Paulo / Brasil. Atendendo o mundo todo.`
+- `contato@vulpesfilmes.com` (link `mailto:`) ` © 2026`
+- `São Paulo/SP - Brasil. Atendendo o mundo todo.`
+
+O copyright voltou a usar a entidade `&copy;` (`©`) — a V1.3.3 tinha
+trocado por `(C)` como texto, revertido na V1.3.4 — e perdeu o nome
+"vulpesfilmes" depois do ano (o logo já está fixo no canto da página o
+tempo todo; repetir o nome no rodapé virou redundante). E-mail e
+copyright dividem a primeira linha porque o link `mailto:` só envolve
+o e-mail — o resto da linha (` © 2026`) fica fora da tag `<a>`, em
+texto solto no mesmo `<p>`.
 
 Redes sociais (`vimeo / instagram / youtube`) **removidas do rodapé em
 V8** — continuam só no menu (`.panel--menu .social`), não duplicadas aqui.
 
 **Tipografia e cores:**
 
-- `wdth` 100, peso 600 (V6, era 400 — texto do rodapé ganhou mais peso pra
-  legibilidade), 14px. Nada de `wdth` 200.
-- Fundo transparente, herdando o `<body>`. Quando um painel abrir, o rodapé
-  fica sobre `--hue` junto com o resto. Texto sempre `--ink`.
+- `wdth` 100, peso 700 (V1.3; era 600 desde a V6, e por uma leva breve
+  — V1.2 — o copyright era a única linha nesse peso, com e-mail e
+  endereço em Newsreader). 14px. Nada de `wdth` 200.
+- **Rodapé inteiro em Advent Pro, em negrito (V1.3).** A V1.2 tinha
+  posto e-mail e endereço em Newsreader (mesmo serif do resto do texto
+  corrido do site, `.bio`/`.panel--about .prose`), com só o copyright
+  na Advent Pro; revertido a pedido — as três linhas voltam a usar a
+  mesma fonte e o mesmo peso, sem seletor específico por linha
+  (`footer p:not(:first-child)` foi removido; a regra `footer` sozinha
+  já cobre as três).
+- **Fundo invertido — preto, texto claro (V1.6)**: `footer.footer-
+  invertido { background: var(--ink); color: var(--paper); border-top-
+  color: var(--paper); }`, marcado direto no HTML (`<footer class=
+  "footer-invertido">`) das 5 páginas do site. Nasceu escopado só à
+  página de projeto (item da reformulação da V1.6), um patch na mesma
+  leva estendeu pra sitewide. `a { color: inherit }` (`base.css`) já
+  resolve o link do e-mail sozinho, sem seletor próprio — e como o
+  rodapé não fica mais sujeito à cor sorteada da sessão (`--hue`)
+  quando um painel abre (a regra de fundo/cor do painel mira `body`,
+  não `footer`), ele mantém preto/claro o tempo todo, painel aberto ou
+  não.
 
 **Layout e espaçamento:**
 
@@ -982,10 +1620,11 @@ Abaixo dele:
 │   ├── feed.js           monta a home e a galeria de diretor
 │   ├── projeto.js        monta a página individual de projeto
 │   ├── panel.js          menu/quem-somos/contato: abrir, foco, inert
+│   ├── idle-color.js     efeito de cor após 30s parado (V1.8)
 │   ├── video-modal.js    modal de vídeo (YouTube/Vimeo/mp4)
 │   ├── photo-modal.js    lightbox de fotos da galeria
 │   ├── media.js          IntersectionObserver, fallback de mídia quebrada
-│   ├── carousel-infinite.js   carrossel infinito (tipo "carousel")
+│   ├── carousel-infinite.js   carrossel infinito + arrasto com mouse
 │   └── chrome.js         injeção de menu/rodapé — não usado por nenhum
 │                          HTML hoje, mantido em sincronia por precaução
 ├── media/
@@ -1005,9 +1644,10 @@ Adicionar projeto = adicionar objeto no array.
   "titulo": "Cobertura Conferência Brasileira de Carbono 2026",
   "cliente": "",
   "ano": 2026,
+  "data": "2026-09-01",
   "registro": "documental",
   "tipo": "single",
-  "diretor": "",
+  "diretor": ["ricardo-rapozo"],
   "video": "https://youtu.be/vB-p7HZ4F18",
   "placeholder": "#b9ad9a",
   "midia": [
@@ -1019,13 +1659,51 @@ Adicionar projeto = adicionar objeto no array.
 }
 ```
 
+**`data` (`"AAAA-MM-DD"`, V1.3.1) é obrigatório e define a ordem do
+feed** — home e galeria de diretor, sempre mais recente primeiro. Regra
+explícita do pedido: "um novo projeto adicionado deve SEMPRE ser o
+primeiro do feed, a não ser que seja especificado uma data" — na
+prática, isso significa que todo projeto novo precisa vir com `data`
+já preenchida (a de hoje, se ninguém especificar outra) pra realmente
+entrar como o mais recente; sem `data`, `js/projetos.js` trata como
+string vazia no sort, o que empurra o projeto pro **fim** da lista, não
+pro início (`undefined`/`""` perde de qualquer data real numa
+comparação de string). O sort roda uma vez, em `js/projetos.js`, assim
+que `projetos.json` termina de carregar — `window.PROJETOS` já chega
+ordenado em todo lugar que o consome (`js/feed.js`, tanto a home quanto
+a galeria filtrada por diretor). Comparação direta de string funciona
+porque o formato ISO (`AAAA-MM-DD`) já ordena igual à ordem
+cronológica, sem precisar converter pra `Date`.
+
 `tipo` é `"single"` ou `"carousel"` (ver seção 4). `midia` é sempre array —
-um item em `single`, vários em `carousel`. `placeholder` é a cor de fundo do
+um item em `single`, vários em `carousel`. Entre V1.3 e V1.5, ter mais
+de um item em `midia` também virava carrossel na própria página do
+projeto, não só no feed; a reformulação da V1.6 (ver seção 6, "Página
+de projeto") removeu esse carrossel de lá — a página do projeto mostra
+só o vídeo de verdade agora, `midia` continua servindo unicamente pro
+loop ambiente do feed/galeria de diretor. `placeholder` é a cor de fundo do
 bloco enquanto a mídia carrega ou falha; se `poster` apontar para um arquivo
 inexistente, `js/media.js` detecta o erro de carga e troca a mídia por um
 aviso "mídia em produção" sobre essa cor — é o jeito padrão de entrar com um
 projeto cujo material ainda não chegou (a mídia de `midia[]` — o loop
 ambiente — não precisa existir pra o projeto ter uma página com vídeo real).
+
+**`diretor` é array de slugs, não string única (V1.8.1) — suporte a
+co-direção.** Era `"diretor": "ricardo-rapozo"`; migrado pra
+`"diretor": ["ricardo-rapozo"]` nos 7 projetos existentes quando o
+primeiro projeto com dois diretores apareceu (`minidoc-cop30-embrapa`,
+`["ricardo-rapozo", "daniela-luquini"]` — "esse job 'EMBRAPA' é
+co-dirigido pela Daniela Luquini"). Os dois consumidores mudaram junto:
+`js/feed.js` (filtro da galeria de diretor) trocou `p.diretor === slug`
+por `p.diretor.indexOf(slug) !== -1` — com array, o projeto aparece na
+galeria de TODOS os diretores listados, não só um; `js/projeto.js`
+(barra do topo da página do projeto) resolve cada slug do array pro
+objeto em `window.DIRETORES`, monta um link por diretor e junta os
+nomes (`"X, Y e Z"` — vírgula entre os do meio, " e " antes do
+último; com um só, mostra só o nome, sem juntador nenhum). Manter como
+array mesmo em projetos de diretor único evita checagem de tipo
+(`Array.isArray`) espalhada pelo código só pra suportar os dois
+formatos — todo consumidor pode assumir array sempre.
 
 `video` (V7, ganhou suporte a Vimeo em V10) é o link do vídeo de
 verdade — YouTube, Vimeo ou mp4 local — que toca no modal ao clicar na
@@ -1099,18 +1777,36 @@ Em aberto, não bloqueiam:
   "Página de projeto e modal de vídeo".
 - [ ] Fotos de `media/galeria/cbcc-2026/` estão pesadas (8-9MB cada, direto
   da câmera) — valeria comprimir/redimensionar antes de publicar
+- [ ] **Religar "Spaten Fight Night" em `projetos.json` depois do
+  lançamento oficial da campanha (sexta-feira).** Removido de propósito
+  na V1.8.3 — "o lançamento dessa campanha é na sexta-feira. Vamos
+  esperar o lançamento oficial" — não é um bug nem mídia faltando, é
+  retenção editorial deliberada. O objeto completo (slug
+  `spaten-fight-night`, 3 loops + 5 fotos de galeria + vídeo do
+  YouTube) está preservado no histórico do git (commit anterior a esta
+  versão) — basta recuperar o bloco de lá e reinserir no array na
+  posição de sempre (era o mais recente, `data: "2026-09-08"`, topo do
+  feed); os arquivos de mídia (`media/loops/260907-SPATEN-CUT-0{1,2,3}
+  .mp4`, `media/galeria/spaten-fight-night/`) não foram apagados,
+  continuam no repo esperando a data certa.
 
 ---
 
 ## 12. Changelog
 
-Formato: mudanças pedidas numa mesma leva = uma versão. Ainda estamos na
-versão `0.x` (beta) — patches ficam `0.XX.1`, `0.XX.2` etc., nunca `XX.1`
-sozinho (isso já causou confusão uma vez: uma correção virou "13.1" em
-vez de "0.13.1", parecendo versão 13). No corpo do texto, `V8`, `V9`,
-`V13` etc. são abreviação de `0.08`, `0.09`, `0.13` — mas patches sempre
-levam o `0.` por extenso (`V0.13.1`, não `V13.1`). Ver nota de versão no
-topo do documento.
+Formato: mudanças pedidas numa mesma leva = uma versão.
+
+**Até `0.17.1`, o site estava em beta** (nunca tinha ido ao ar) —
+patches ficavam `0.XX.1`, `0.XX.2` etc., nunca `XX.1` sozinho (isso já
+causou confusão uma vez: uma correção virou "13.1" em vez de "0.13.1",
+parecendo versão 13). No corpo do texto, `V8`, `V9`, `V13` etc. são
+abreviação de `0.08`, `0.09`, `0.13` — patches daquela fase sempre levam
+o `0.` por extenso (`V0.13.1`, não `V13.1`).
+
+**A partir da `1.0`** (primeiro deploy em produção, `vulpesfilmes.com`
+no ar), o prefixo `0.` não existe mais — ele só marcava a fase de beta.
+Versões novas são `1.1`, `1.2`, etc., e patches seguem o padrão comum
+(`1.1.1`). Ver nota de versão no topo do documento.
 
 ### 0.08
 
@@ -1443,3 +2139,1127 @@ e alinhar a foto ao texto."
   direita no fim de trabalhos e de bio, nas duas páginas, desktop e
   mobile. Smoke test completo (todas as páginas + todos os
   `projeto.html?slug=...`) sem erros de console ou rede.
+
+### 0.17.1
+
+Patch: primeiro deploy do site (repositório GitHub em
+`ricardorapozo/vulpesfilmes`, publicado via Cloudflare Pages) e decisão
+do domínio principal: **`vulpesfilmes.com`**, não `.com.br` — o site já
+se posiciona como "Atendendo o mundo todo" no rodapé, o que pesa mais
+pro `.com` do que pro registro local.
+
+- **E-mail de contato unificado pro domínio `.com` em todas as
+  páginas.** Antes da decisão, o rodapé (`contato@vulpesfilmes.com`) e o
+  card de "Contato" (`contato@vulpesfilmes.com.br`) usavam domínios
+  diferentes — inconsistência que já existia no site antes do deploy,
+  só ficou visível ao revisar o conteúdo pra decidir o domínio
+  principal. Agora os dois lugares, nas 5 páginas (`index.html`,
+  `projeto.html`, `time.html`, `ricardo-rapozo.html`,
+  `daniela-luquini.html`), usam `contato@vulpesfilmes.com`.
+- Verificado: `grep` confirmando zero ocorrência de `.com.br` restante
+  no HTML; smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erros de console ou rede.
+
+### 1.0
+
+**Site no ar.** Sai do beta — primeira versão em produção. Não muda
+código nenhum (o conteúdo é o mesmo da `0.17.1`); marca o momento em que
+o site passou a existir publicamente, fora do ambiente local.
+
+- **Deploy**: Cloudflare Pages, conectado ao repositório GitHub
+  `ricardorapozo/vulpesfilmes` (branch `main`) — todo push pra `main`
+  vira deploy automático. Sem build (`Framework preset: None`, build
+  command vazio, output directory `/`), porque o site é HTML/CSS/JS
+  puro, sem etapa de compilação.
+- **Domínio principal**: `vulpesfilmes.com`. `vulpesfilmes.com.br`
+  redireciona pra ele via Redirect Rule do Cloudflare (301 permanente,
+  `https://vulpesfilmes.com.br/*` → `https://vulpesfilmes.com/${1}`,
+  preservando path e query string). A regra só funciona porque
+  `vulpesfilmes.com.br` tem um registro DNS tipo A proxied (nuvem
+  laranja) apontando pro IP reservado `192.0.2.1` — esse IP nunca
+  recebe a requisição de verdade, o redirect acontece antes, na borda
+  do Cloudflare; sem o registro proxied, a regra existe mas nunca é
+  acionada (é um aviso que o próprio Cloudflare dá ao tentar publicar a
+  regra sem DNS proxied já configurado).
+- Verificado: `curl` confirmando `https://vulpesfilmes.com/` retornando
+  `200` e `https://vulpesfilmes.com.br/` retornando `301` pro `.com`.
+
+### 1.1
+
+Primeira leva de ajustes com o site já em produção: as páginas
+estavam "duras" (navegação em corte seco) e a galeria de fotos das
+páginas de projeto usava uma grade uniforme de 3 colunas quadradas em
+vez do photo grid de referência (imagens verticais e horizontais
+misturadas).
+
+- **Fade entre páginas**, em qualquer navegação interna — View
+  Transitions API "cross-document" (`@view-transition { navigation:
+  auto; }` em `base.css`), sem JS nenhum. Cross-fade padrão do
+  navegador, só ajustando duração/curva pra bater com o resto do site
+  (`--t-panel`/`--ease-out`). Degrada bem: navegador sem suporte
+  (Safari/Firefox no momento) simplesmente não anima, sem erro. Ver
+  seção 5, "Transição entre páginas".
+- **Galeria de fotos (`.galeria-fotos`) virou uma grade editorial em
+  pares** — uma foto horizontal (coluna larga) ao lado de uma vertical
+  (coluna estreita) por linha, imagens recortadas via `object-fit:
+  cover` pro formato da célula ("máscara" pedida), no lugar da grade
+  3 colunas quadradas anterior. Só a coluna estreita tem
+  `aspect-ratio` fixo; a larga estica pra acompanhar a altura da linha
+  e sai em formato paisagem por consequência da largura, não de uma
+  proporção própria. Mobile vira coluna única, mantendo a alternância
+  de proporção. Ver seção 6, "Página de projeto e modal de vídeo".
+- Verificado via Playwright: dimensões reais dos itens da grade
+  conferem com o par largura 2:1 e a mesma altura de linha nas duas
+  colunas (`cbcc-2026`, 4 fotos); o caso de total ímpar de fotos
+  (`dancebook-brasil`, 3 fotos) cai certinho na proporção de fallback
+  em vez de ficar sem altura. `@view-transition` confirmado presente e
+  parseado no stylesheet computado. Smoke test completo (todas as
+  páginas + todos os `projeto.html?slug=...`) sem erros de console ou
+  rede.
+
+### 1.1.1
+
+Duas observações sobre a transição de página da 1.1: o efeito pedido
+era um "dip to white" (dissolve pro branco, do branco dissolve pra
+próxima), não um crossfade direto; e a troca de aba trabalhos/bio das
+páginas de diretor tinha ficado de fora, sem efeito nenhum.
+
+- **Crossfade trocado por "dip to white".** Duas animações em
+  sequência (`::view-transition-old(root)` só perde opacidade,
+  `::view-transition-new(root)` só ganha, uma depois da outra via
+  `animation-delay`) em vez do crossfade simultâneo padrão do
+  navegador — no meio das duas, com as duas transparentes, aparece o
+  branco (`background-color: #fff` em
+  `::view-transition-image-pair(root)`). Novo token `--t-page: .6s`
+  (`tokens.css`) pro tempo total do dip, cada metade correndo em
+  `calc(var(--t-page) / 2)`. Ver seção 5, "Transição entre páginas".
+- **Troca de aba trabalhos/bio ganhou o mesmo efeito.** Raiz do
+  problema: aquilo não é uma navegação de verdade (é hash mudando
+  dentro do mesmo documento, em `js/diretor-tabs.js`), e a View
+  Transitions API "cross-document" da V1.1 só cobre navegação real
+  entre páginas — por isso a troca de aba nunca teve fade nenhum desde
+  que o recurso existe. Corrigido com a segunda forma da mesma API,
+  `document.startViewTransition()` ("same-document"): mesmos pseudo-
+  elementos, mesmo CSS do dip-to-white, sem regra nova nenhuma — só
+  precisou envolver a troca de aba nessa chamada, mantendo o primeiro
+  `mostrar()` do carregamento da página de fora (não precisa de
+  transição pra um estado que acabou de chegar).
+- Verificado via Playwright: `document.startViewTransition` confirmado
+  suportado no Chromium do ambiente de teste e confirmado que é
+  chamado no evento `hashchange`; as duas `@keyframes` (`dip-to-
+  white-out`/`dip-to-white-in`) confirmadas presentes no stylesheet.
+  Sequência de screenshots capturada durante uma navegação real
+  (index → página de diretor) mostra visualmente as três fases: página
+  antiga dissolvendo, tela branca, página nova aparecendo. Smoke test
+  completo (todas as páginas + todos os `projeto.html?slug=...`) sem
+  erros de console ou rede.
+
+### 1.2
+
+- **Logo fica de fora do dip-to-white.** `view-transition-name: logo`
+  em `.logo` (`base.css`) tira ele do grupo `root` (quem sofre o dip) e
+  o trata como elemento persistente entre as duas páginas —
+  `animation: none !important` nos pseudo-elementos correspondentes
+  garante que ele não anima de jeito nenhum. Vale tanto pra navegação
+  entre páginas quanto pra troca de aba trabalhos/bio. Ver seção 5,
+  "Transição entre páginas".
+- **Link "voltar" no fim das páginas de projeto**, canto direito, acima
+  do rodapé — mesmo padrão visual do `.diretor-voltar`, mas como
+  `.projeto-voltar`, HTML estático fora de `<main>` (que em
+  `projeto.html` é 100% gerado por JS). Ver seção 6, "Página de
+  projeto e modal de vídeo".
+- **Rodapé com duas fontes**: copyright continua na Advent Pro; e-mail
+  e endereço passam pra Newsreader, igual ao resto do texto corrido do
+  site. `footer p:not(:first-child)`, com `font-variation-settings:
+  normal` pra não herdar o peso da Advent Pro. Ver seção 8, "Rodapé".
+- **Menu com só o link do Instagram** — Vimeo e YouTube removidos de
+  `.social` nas 5 páginas (o separador `/` saiu junto, não fazia mais
+  sentido com um link só). `href="#"` continua placeholder; o handle
+  real ainda não foi definido.
+- Verificado via Playwright: `view-transition-name` computado do logo
+  confirmado como `"logo"`; sequência de screenshots durante uma
+  navegação real mostra o logo nítido e parado enquanto o conteúdo
+  abaixo ainda está no meio do dip; fonte computada das três linhas do
+  rodapé confirmada (Advent Pro na primeira, Newsreader nas outras
+  duas); `.social` confirmado com um link só em todas as páginas;
+  `.projeto-voltar` confirmado presente, alinhado à direita, `href="./"`.
+  Smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erros de console ou rede.
+
+### 1.3
+
+- **Novo projeto: `spaten-fight-night`** — "Spaten Fight Night - Video
+  case pitch - Gut São Paulo", cliente Gut São Paulo, 2026, vídeo
+  principal em `https://youtu.be/_E8HEDlR8UA`. Mídia (3 cortes de loop,
+  `media/loops/260907-SPATEN-CUT-01/02/03.mp4`) e galeria (5 fotos,
+  `media/galeria/spaten-fight-night/`) localizadas na pasta `media/` já
+  existente no repositório. Primeiro projeto com mais de um item em
+  `midia` — ver o item seguinte.
+- **Mídia principal da página de projeto vira carrossel quando há mais
+  de um `midia`** (`js/projeto.js`). Antes, a página de projeto sempre
+  mostrava só `midia[0]`, mesmo quando o projeto tinha mais de um vídeo
+  ambiente — não existia um jeito de ver os outros ali. Agora, com
+  `midia.length > 1`, a mídia principal usa a mesma marcação de
+  carrossel do feed (`.media--carousel`/`.track`/`.slide`) e funciona
+  de graça com `js/carousel-infinite.js`/`js/media.js`, que já
+  procuram esses seletores no documento inteiro. Ver seção 6, "Página
+  de projeto e modal de vídeo".
+- **Botão "voltar" das páginas de projeto virou um botão flutuante,
+  fixo até o rodapé** — canto inferior esquerdo em vez de um link no
+  fim do fluxo normal (era assim desde a V1.2). `position: sticky`
+  dentro de um novo wrapper (`<div class="projeto-corpo">`, em
+  `projeto.html`) que envolve `<main>` e o link, terminando exatamente
+  onde o `<footer>` começa — o "alcance" de um elemento sticky é
+  limitado pela caixa do pai dele, então o link flutua enquanto o
+  conteúdo do projeto ainda está passando pela tela e para de
+  acompanhar assim que a rolagem chega no rodapé, sem nunca sobrepor
+  ele. Sem JS nenhum. Ver seção 6, "Link 'voltar', fixo até o rodapé".
+- **Seis títulos de projeto atualizados**: `cbcc-2026`,
+  `dancebook-brasil`, `gree-smartwind-brasil`,
+  `global-renewable-alliance-cop30`, `dossie-anonimo` e
+  `historias-do-brasil-redes` — todos os projetos existentes até então.
+  Dois deles (`dancebook-brasil`, `historias-do-brasil-redes`) tinham
+  título em duas linhas (`\n` no JSON); os novos títulos vieram como
+  frase única, então o `\n` saiu — o texto quebra por conta própria via
+  CSS, como qualquer título mais longo. No título de `dossie-anonimo`,
+  fechei um parêntese que tinha ficado aberto no pedido ("...EP ZERO)"
+  — leitura direta de que era typo, não intenção.
+- **Rodapé de volta pra Advent Pro em negrito** nas três linhas —
+  reverte a V1.2 (que tinha posto e-mail/endereço em Newsreader). `wght`
+  da regra `footer` sobe de 600 pra 700; a regra `footer p:not(:first-
+  child)` que existia só pra isso foi removida. Ver seção 8, "Rodapé".
+- Verificado via Playwright: página do Spaten confirmada com 3 slides
+  e 3 `<video>` no carrossel principal; posição do botão "voltar"
+  conferida em dois momentos — no fim da página (`voltarBottom ===
+  footerTop`, sem sobreposição) e no meio da rolagem (`bottom: 24px`
+  do viewport, flutuando sobre o conteúdo) —, com screenshot de cada
+  um; `projetos.json` validado como JSON bem-formado após as seis
+  edições de título e a inserção do novo projeto. Smoke test completo
+  (todas as páginas + todos os `projeto.html?slug=...`, incluindo o
+  novo `spaten-fight-night`) sem erros de console ou rede.
+
+### 1.3.1
+
+**Nova regra estrutural**: a ordem do feed (home e galeria de diretor)
+passa a ser sempre pela data de postagem, mais recente primeiro — nunca
+mais a ordem em que os projetos aparecem no JSON. Todo projeto passa a
+ter um campo `data` (`"AAAA-MM-DD"`) obrigatório; um projeto novo sem
+`data` especificada entra como o mais recente (a de hoje).
+
+- **Campo `data` adicionado a todos os 7 projetos** em `projetos.json`.
+  `spaten-fight-night` recebeu a data pedida (`2026-09-08`). Os outros
+  6 (já existentes antes desse patch) não tinham uma data de postagem
+  registrada em lugar nenhum — **as datas deles são inferidas**, só pra
+  preservar a ordem que o feed já tinha antes desse patch (a mesma
+  ordem em que estavam no array), espaçadas por uma semana entre si,
+  todas antes da data do Spaten. Não são datas reais de publicação;
+  quem tiver a data verdadeira de cada uma pode me passar que eu
+  corrijo.
+- **Ordenação em `js/projetos.js`**, uma vez, logo que `projetos.json`
+  termina de carregar — `.sort()` comparando `data` como string (o
+  formato ISO já ordena igual à ordem cronológica, sem precisar
+  converter pra `Date`). `window.PROJETOS` já chega ordenado em todo
+  lugar que o consome, sem precisar mudar `js/feed.js`. Ver seção 10,
+  nota sobre o campo `data` no schema de `projetos.json`.
+- Verificado via Playwright: ordem dos títulos no feed da home
+  conferida via DOM (`Spaten` primeiro, seguido pelos outros 6 na
+  mesma ordem de antes). Smoke test completo sem erros de console ou
+  rede.
+
+### 1.3.2
+
+Patch de ajuste: o botão flutuante "voltar" da página de projeto
+(V1.3) tinha ido pro canto inferior esquerdo; o pedido era o direito.
+
+- **`.projeto-voltar` trocou `text-align: left` por `right`** —
+  único ajuste necessário; o mecanismo de `position: sticky` (limitado
+  pelo wrapper `.projeto-corpo`, parando exatamente no rodapé) continua
+  idêntico, só o lado do texto/link dentro da faixa muda.
+- Verificado via Playwright: `getBoundingClientRect()` do link
+  confirmando 0px de distância da borda direita do viewport durante a
+  rolagem; screenshot conferido visualmente. Smoke test completo sem
+  erros de console ou rede.
+
+### 1.3.3
+
+Patch: rodapé de três `<p>` (um por frase) pra dois, com o conteúdo
+reagrupado — e-mail e copyright na mesma linha, separados por ` - `.
+
+- **Rodapé em duas linhas** nas 5 páginas: `contato@vulpesfilmes.com -
+  (C) 2026 vulpesfilmes` e `São Paulo/SP - Brasil. Atendendo o mundo
+  todo.` O link `mailto:` continua só em volta do e-mail; o resto de
+  cada linha é texto solto no mesmo `<p>`.
+- **Copyright virou texto `(C)` literal**, no lugar da entidade
+  `&copy;` (`©`) usada até aqui — pedido explícito.
+- **Endereço mudou de "São Paulo / Brasil" pra "São Paulo/SP - Brasil"**
+  — acrescenta a sigla do estado.
+- Nenhuma mudança de CSS necessária: a regra `footer p:not(:first-
+  child)` que diferenciava a primeira linha das outras já tinha sido
+  removida na V1.3 (quando o rodapé inteiro voltou a usar a mesma
+  fonte) — com duas linhas usando a mesma regra `footer p`, o resultado
+  já sai visualmente consistente sem seletor nenhum extra.
+- Verificado via Playwright: `textContent` das duas linhas conferido
+  contra o texto exato pedido, e o `href="mailto:contato@vulpes
+  filmes.com"` confirmado ainda presente e isolado no primeiro `<p>`.
+  Smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erros de console ou rede.
+
+### 1.3.4
+
+Patch: ajuste fino na primeira linha do rodapé, um passo depois da
+V1.3.3 — `(C) 2026 vulpesfilmes` virou `© 2026`.
+
+- **Copyright de volta pro símbolo `©`** (entidade `&copy;`), no lugar
+  do texto `(C)` que a V1.3.3 tinha acabado de introduzir.
+- **Nome "vulpesfilmes" removido de depois do ano** — a linha termina
+  em `© 2026`, sem repetir o nome (já visível no logo fixo do canto da
+  página).
+- Segunda linha (`São Paulo/SP - Brasil...`) sem mudança nenhuma.
+- Verificado via Playwright: `textContent` da primeira linha conferido
+  como `"contato@vulpesfilmes.com © 2026"` exato, `mailto:` ainda
+  isolado só no e-mail. Smoke test completo (todas as páginas + todos
+  os `projeto.html?slug=...`) sem erros de console ou rede.
+
+### 1.4
+
+Pedido: arrastar com o mouse pra passar de slide num carrossel, e
+garantir que todo carrossel do site é infinito "como o do Spaten".
+
+- **Arrastar com o mouse rola o carrossel** (`js/carousel-infinite.js`,
+  Pointer Events filtrando por `pointerType === 'mouse'` — toque
+  continua no scroll nativo, intocado). Cursor `grab`/`grabbing` de
+  affordance. Ver seção 4, "Arrastar com o mouse rola o carrossel".
+- **Bug real encontrado no processo, não só o esperado:**
+  `track.setPointerCapture()` (a implementação óbvia/comum pra esse
+  tipo de interação) reencaminha o `click` resultante pro elemento que
+  capturou, quebrando `e.target.closest('[data-video]')` em
+  `js/video-modal.js` — **qualquer clique no carrossel, mesmo sem
+  arrastar nada, parou de abrir o vídeo** na primeira versão. Corrigido
+  sem usar captura: `pointermove`/`pointerup` direto no `window`.
+- **Segundo bug real, esse sim exatamente o que o pedido apontava:**
+  `projeto.html` nunca carregava `js/carousel-infinite.js` — passou
+  despercebido desde a V1.3 porque `js/media.js` (que está incluído)
+  já cuidava de setas e autoplay, disfarçando a ausência do loop
+  infinito. O carrossel do Spaten, citado como referência do que
+  "infinito" deveria parecer, não estava de fato infinito até esse
+  ajuste. Corrigido com uma linha (`<script
+  src="js/carousel-infinite.js">`) em `projeto.html`.
+- Verificado via Playwright: `scrollLeft` muda ao simular
+  `mousedown`→`mousemove`→`mouseup`; um clique de verdade (sem
+  arrastar) continua abrindo o vídeo, um arrasto de verdade não abre;
+  contagem de clones (`aria-hidden="true"`) conferida em todos os
+  carrosséis do site — home (3), galeria de diretor (3), página do
+  Spaten (1) — todos com `clones === slidesReais × 2`. Smoke test
+  completo (todas as páginas + todos os `projeto.html?slug=...`) sem
+  erros de console ou rede.
+
+### 1.5
+
+Dois pedidos sobre as setas do carrossel: a esquerda não funcionava, e
+as duas deveriam só aparecer com o mouse por perto.
+
+- **Bug real por trás da seta esquerda não funcionar**: `.arrow` e
+  `.slide__link`/`.media__play` empatavam em `z-index: 3` (um via
+  token `--z-arrow`, o outro hardcoded); como as setas vêm antes do
+  `.track` no HTML, o link/botão invisível do slide ganhava o empate
+  de empilhamento e interceptava o clique — não um bug exclusivo da
+  esquerda, só mais fácil de notar lá. `--z-arrow` sobe pra `5` em
+  `tokens.css`, acima dos dois.
+- **Setas escondidas por padrão, aparecem no hover do carrossel**
+  (`.media--carousel .arrow { opacity: 0 }`, revela no `:hover` e no
+  `:focus-within` pra quem navega por teclado). Escopado só aos
+  carrosséis — as setas do lightbox de fotos continuam sempre
+  visíveis, contexto diferente.
+- Verificado via Playwright: `elementFromPoint()` na posição da seta
+  esquerda confirmando que ela mesma (não mais o `slide__link`) recebe
+  o clique; clique de verdade nas duas setas (home e página do Spaten)
+  movendo `scrollLeft` sem navegar; opacidade computada da seta
+  confirmada em `0` antes do hover e `1` com o mouse sobre o
+  carrossel; screenshot dos dois estados. Smoke test completo (todas
+  as páginas + todos os `projeto.html?slug=...`) sem erros de console
+  ou rede.
+
+### 1.6
+
+Reformulação completa da página de projeto, a partir de referência
+visual ("FAÇA EXATAMENTE COMO A REF"), mais um patch estendendo o novo
+rodapé pro site inteiro.
+
+- **Barra fixa no topo**, centralizada, `[Diretor]: [Título]` inteiro
+  em Newsreader — substitui o `<h1 class="title">` grande de antes.
+  Nome do diretor é link sublinhado pra página dele.
+- **Vídeo de verdade tocando direto, sem clique nenhum antes** —
+  substitui a mídia ambiente (loop mudo) que precisava ser clicada
+  pra abrir um modal. Mudo por necessidade técnica: autoplay com som
+  só é permitido pelo navegador depois de um gesto do usuário, e aqui
+  não há gesto nenhum antes do vídeo precisar tocar.
+- **Removido da página de projeto** (mas ainda em uso na home/galeria
+  de diretor, dados intactos em `projetos.json`): título grande, mídia
+  ambiente clicável + modal, carrossel de `midia` no topo (V1.3), grade
+  de fotos (`.galeria-fotos`, V1.1) e seu lightbox. `projeto.html`
+  parou de carregar `js/media.js`, `js/carousel-infinite.js`,
+  `js/video-modal.js` e `js/photo-modal.js`; ganhou `js/diretores.js`
+  (novo, pra resolver o nome/link do diretor na barra).
+- **`urlDeEmbed()` promovida de `js/video-modal.js` pra
+  `js/helpers.js`** — agora compartilhada entre o modal (home/galeria
+  de diretor) e o player inline (página de projeto), em vez de duas
+  cópias da mesma regex.
+- **Patch na mesma leva: rodapé invertido (preto, texto claro)
+  estendido pro site inteiro** — nasceu escopado só à página de
+  projeto (item da reformulação), depois pedido explícito pra virar
+  `<footer class="footer-invertido">` nas 5 páginas.
+- Verificado via Playwright: barra confirmada com texto e `href`
+  corretos, fonte Newsreader computada; `<iframe>` do vídeo confirmado
+  com `autoplay=1&mute=1` na URL e efetivamente tocando (progresso
+  avançando entre duas capturas); rodapé confirmado com
+  `background-color: rgb(0,0,0)` e `color` claro em todas as páginas;
+  `.projeto-voltar` continua funcionando sem mudança de mecanismo.
+  Smoke test ajustado pra ignorar ruído esperado de terceiros
+  (telemetria interna do YouTube bloqueada em ambiente headless, e o
+  Vimeo disparando um desafio anti-bot do Cloudflare que nunca
+  resolve `networkidle` — trocado por `waitUntil:'load'` só pra esse
+  caso) — sem esse ajuste, o teste reportava falha em request que não
+  tem relação nenhuma com o código do site. Todas as páginas +
+  `projeto.html?slug=...` sem erro de console ou de rede genuíno.
+
+### 1.6.1
+
+Patch logo depois da reformulação da V1.6: a grade de fotos não devia
+ter saído da página de projeto, só ganhar um tratamento diferente no
+lightbox — fundo branco, e o logo continuando visível (diferente do
+modal de vídeo, que segue escondendo os dois).
+
+- **`.galeria-fotos` volta**, abaixo do vídeo, quando `p.galeria` não
+  está vazio — o trecho que a V1.6 tinha removido de `js/projeto.js`
+  voltou; o dado nunca saiu de `projetos.json`.
+- **`js/photo-modal.js` e `#photo-modal` voltam a `projeto.html`** —
+  clicar numa foto abre o mesmo lightbox-carrossel de antes (setas,
+  Esc, ←/→, clique fora fecham).
+- **Fundo do lightbox trocado de preto de cinema pra branco**
+  (`.photo-modal { background: var(--paper) }`, era `rgba(0,0,0,.92)`)
+  — só nesse componente; o modal de vídeo continua preto. Botão
+  "fechar" também trocou de branco pra `var(--ink)` (texto claro num
+  fundo branco seria invisível).
+- **Logo continua visível durante o lightbox de fotos** — antes, a
+  mesma classe (`is-lightbox-open`) escondia logo e hambúrguer nos dois
+  modais (vídeo e fotos). `js/photo-modal.js` passou a usar uma classe
+  própria, `is-photo-open`, que esconde só o hambúrguer (conflito real
+  de posição com o botão "fechar", mesmo canto); o logo (canto oposto,
+  sem conflito nenhum) só saía por estética do modo cinema, que deixou
+  de fazer sentido com fundo branco. `js/video-modal.js` não mudou —
+  continua em `is-lightbox-open`, escondendo os dois.
+- Verificado via Playwright: `cbcc-2026` com 4 fotos na grade;
+  lightbox abrindo com `background-color: rgb(247,246,244)`
+  (`--paper`), `.logo` com `display` diferente de `none`, `.burger`
+  escondido, texto do "fechar" em preto; setas trocando de foto
+  (`src` diferente entre cliques); fechar devolvendo o modal a
+  `is-open: false`. Modal de vídeo testado à parte na home pra
+  confirmar que continua sem nenhuma mudança (fundo preto, logo e
+  hambúrguer escondidos, classe `is-lightbox-open`). Smoke test
+  completo (todas as páginas + todos os `projeto.html?slug=...`) sem
+  erro de console ou de rede genuíno.
+
+### 1.6.2
+
+Patch: pedido pra garantir que a barra superior da página de projeto é
+fixa, com referência mostrando ela legível por cima da galeria de
+fotos rolada.
+
+- **Verificado primeiro, não presumido**: `.projeto-barra` já era
+  `position: fixed` desde a V1.6 — testado via Playwright
+  (`getBoundingClientRect`) confirmando `top` idêntico antes e depois
+  de rolar 900px, e nenhum ancestral com `transform`/`filter`/
+  `perspective`/`will-change` (o tipo de regra que quebra `position:
+  fixed` sem aviso nenhum). Não era regressão de fixação.
+- **O problema real: contraste.** A barra é `position: fixed` mas
+  sempre foi transparente — enquanto o `.projeto-video` (fundo escuro)
+  ainda não tinha passado da rolagem, o texto da barra ficava por cima
+  dele, quase ilegível. Na referência, a barra só aparece legível
+  porque a foto/rolagem capturada já tinha passado do vídeo. Corrigido
+  dando fundo próprio: `background: var(--paper)`, `border-radius:
+  999px` (pílula), `padding: 6px 16px` — agora ela lê igual em
+  qualquer ponto da rolagem, em cima de vídeo escuro ou não.
+- Verificado via Playwright: screenshot da mesma posição de rolagem do
+  print de referência, comparando visualmente — barra legível por
+  cima do vídeo agora; mobile (420px) conferido também, sem colisão
+  com logo/hambúrguer. Smoke test completo (todas as páginas + todos
+  os `projeto.html?slug=...`) sem erro de console ou de rede genuíno.
+
+### 1.6.3
+
+Patch: "erro meu" no 1.6.2, segundo o próprio pedido — a pílula com
+fundo na barra superior devia ser revertida (texto de volta a
+transparente), e o pedido de verdade era outro: no mobile, o
+`[Diretor]: [Título]` desce pro rodapé, numa faixa branca fixa até o
+`<footer>` padrão.
+
+- **`.projeto-barra` volta a ser texto transparente no desktop** — sem
+  fundo, sem `border-radius`, sem `padding` extra; `top` de volta a
+  `18px` (era `14px` no patch revertido).
+- **No mobile (≤820px), `.projeto-barra` vira uma faixa branca fixa no
+  rodapé**, com o mesmo limite de `.projeto-voltar` — nunca invade o
+  `<footer>`. Precisou de uma reestruturação: `.projeto-barra` deixou
+  de nascer dentro do `html` que `js/projeto.js` escreve em
+  `main.innerHTML` e virou HTML estático em `projeto.html`
+  (`#projeto-barra`), filha direta de `.projeto-corpo` — irmã de
+  `<main>` e de `.projeto-voltar`, não mais neta dentro de `<main>` —
+  porque o truque de `position: sticky` limitado pelo pai (o mesmo que
+  `.projeto-voltar` já usa) exige isso.
+- **`.projeto-voltar` sobe no mobile** (`bottom: 70px`) pra não ficar
+  embaixo da faixa nova — as duas são `position: sticky`
+  independentes, cada uma limitada por `.projeto-corpo`.
+- Verificado via Playwright: desktop com `background-color:
+  rgba(0,0,0,0)` (transparente) confirmado; mobile com a barra
+  `position: sticky`, fundo `var(--paper)`, permanecendo visível
+  durante a rolagem pelas fotos (screenshot no meio da rolagem);
+  posição final conferida — `.projeto-voltar` encostando exatamente no
+  `<footer>` (`voltarBottom === footerTop`), `.projeto-barra` nunca
+  sobrepondo nem o rodapé nem `.projeto-voltar`. Smoke test completo
+  sem erro de console ou de rede genuíno.
+
+### 1.6.4
+
+Patch: confirmado que o autoplay do vídeo da página de projeto deve
+vir **com som**, não mudo — "quando entramos na página e o vídeo dá
+autoplay ele VEM COM SOM ATIVADO".
+
+- **`js/projeto.js` não força mais `&mute=1`/`&muted=1`/`muted`** no
+  embed — a V1.6 original tinha adicionado isso por avaliar (errado)
+  que seria a única forma garantida de autoplay funcionar. Removido; o
+  autoplay agora sempre pede com som. Ressalva técnica que continua
+  valendo, documentada no código: a política de autoplay de cada
+  navegador ainda decide se aceita ou recusa som sem gesto prévio do
+  usuário — o código pede com som, o navegador que decide se aceita.
+- Verificado via Playwright: `src` do `<iframe>` confirmado sem
+  `mute`/`muted` na URL. Smoke test completo sem erro de console ou de
+  rede genuíno.
+
+### 1.6.5
+
+Patch: "o lightbox dos vídeos na página de portfólio também devem ser
+brancos" — o modal de vídeo (home/galeria de diretor) ganha o mesmo
+tratamento branco que o lightbox de fotos já tinha.
+
+- **`.video-modal` com fundo `var(--paper)`**, não mais
+  `rgba(0,0,0,.92)` de cinema; `.video-modal__close` de `#fff` pra
+  `var(--ink)` (texto claro num fundo branco ficaria invisível).
+- **`js/video-modal.js` passou a usar `is-photo-open`**, a mesma
+  classe do lightbox de fotos, no lugar de `is-lightbox-open` — os dois
+  modais agora têm o mesmo tratamento de chrome (só o hambúrguer some,
+  o logo continua visível: sem fundo escuro em nenhum dos dois, não
+  sobrou motivo pra esconder o logo). `is-lightbox-open` ficou sem
+  nenhum uso no site; a regra em `css/base.css` foi simplificada pra
+  uma linha só, escopada em `is-photo-open`.
+- Verificado via Playwright: modal de vídeo aberto a partir da home
+  confirmado com `background-color: rgb(247,246,244)`, logo visível,
+  hambúrguer escondido, classe `is-photo-open` no `<html>`. Smoke test
+  completo (todas as páginas + todos os `projeto.html?slug=...`) sem
+  erro de console ou de rede genuíno.
+
+### 1.6.6
+
+Patch: sete títulos reescritos (todos os projetos existentes até
+então).
+
+- `cbcc-2026`: "Conferência Brasileira de Carbono 2026 para Aliança
+  Brasil NBS"
+- `dancebook-brasil`: "Dancebook Brasil, Gold Lion Design 2026 para
+  Lovely."
+- `gree-smartwind-brasil`: "Smartwind para Gree"
+- `global-renewable-alliance-cop30`: "COP30 / UN Conference for Global
+  Renewable Alliance"
+- `dossie-anonimo`: "O Mistério da Ilha dos Caranguejos para Dossiê
+  Anônimo"
+- `historias-do-brasil-redes`: "Histórias do Brasil para Projeto ReDes
+  do Instituto Votorantim" — corrigido "Votorantin" pra "Votorantim" no
+  pedido, pra bater com a grafia já usada no campo `cliente` desse
+  mesmo projeto.
+- `spaten-fight-night`: "Spaten Fight Night, case pitch para Gut São
+  Paulo"
+- Verificado: `projetos.json` validado como JSON bem-formado depois
+  das sete edições; smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erro de console ou de rede genuíno.
+
+### 1.6.7
+
+Bug real reportado: "o efeito de cor deve cobrir TODOS os elementos da
+página, inclusive as fotos e vídeos. A única coisa que fica por cima é
+o menu, submenu, quem somos e contato."
+
+- **Causa raiz: o duotone (filtro + tingimento com a cor da sessão) só
+  cobria `.media`**, a classe original do feed/carrossel — três
+  containers de mídia adicionados em versões mais recentes nunca foram
+  incluídos: `.diretor-bio__foto` (bio do diretor, V16), `.projeto-
+  video` (vídeo de verdade da página de projeto, V1.6),
+  `.galeria-fotos__item` (grade de fotos, V1.1). Cada vez que a mídia
+  entrou por um container novo, ela silenciosamente ficou de fora do
+  efeito de cor.
+- **Corrigido repetindo o mesmo par de regras do `.media`** (posição
+  relativa + pseudo-elemento `::after` com `mix-blend-mode: darken` +
+  filtro `grayscale/contrast/brightness`) pros três containers que
+  faltavam, em `css/layout.css`.
+- **Ficam de fora, de propósito**: menu, "quem somos", "contato" (só
+  texto/logo próprio, sem mídia pra cobrir de qualquer forma, exceto o
+  logo do "quem somos" — esse continua sem filtro) e os dois
+  lightboxes (modal de vídeo e de fotos), que já são sistemas com
+  fundo próprio desde que existem, fora da cor da sessão por princípio,
+  não por esquecimento.
+- Verificado via Playwright: com um painel aberto (`is-overlay-open`),
+  filtro e opacidade do tingimento conferidos como ativos em
+  `.diretor-bio__foto img` (bio do diretor), `.projeto-video iframe`
+  (vídeo da página de projeto) e `.galeria-fotos__item img` (grade de
+  fotos); `.media` da home conferida sem regressão; logo do "quem
+  somos" confirmado SEM filtro mesmo com o painel aberto. Screenshots
+  da bio e do vídeo de projeto com o painel aberto, confirmando o
+  tingimento visualmente. Smoke test completo (todas as páginas +
+  todos os `projeto.html?slug=...`) sem erro de console ou de rede
+  genuíno.
+
+### 1.7
+
+Reformulação do painel "quem somos", a partir de referência visual
+("CRAVE A REFERÊNCIA"): de faixa subindo do rodapé pra card
+centralizado, com um novo layout de conteúdo e uma transição diferente.
+
+- **Card centralizado**, não mais faixa cobrindo 2/3 da tela a partir
+  do rodapé — mesmo princípio do card de contato (`top:50%; left:50%;
+  transform:translate(-50%,-50%)`), só que maior (`width: min(1300px,
+  90vw)`, `max-height: 85vh` com scroll interno se precisar).
+- **Conteúdo em coluna, centralizado**: texto em cima, logo (ícone +
+  wordmark) embaixo — era lado a lado desde a V0.13.1. Ordem invertida
+  direto no HTML, não via CSS `order`, pra ordem de leitura bater com a
+  ordem visual.
+- **Texto muda de Newsreader pra Advent Pro**, bem maior
+  (`clamp(22px, 2.6vw, 38px)`, era `clamp(16px, 1.5vw, 20px)`) e
+  centralizado (era alinhado à esquerda) — o painel virou destaque
+  tipográfico, não leitura corrida discreta.
+- **Logo bem menor** (`clamp(160px, 14vw, 220px)`, era `clamp(260px,
+  30vw, 460px)`) — faz sentido menor: agora é só a assinatura abaixo
+  do texto, não briga mais por protagonismo num layout lado a lado.
+- **Entrada/saída vira "dip to white"**, não mais `transform`
+  deslizando de baixo pra cima: "antes o box entrava de baixo para
+  cima, agora faça entrando com o efeito dip to white padrão."
+  Reaproveita o mesmo mecanismo das transições de página (`@view-
+  transition` + pseudo-elementos `root`), só que pela via
+  "same-document" da API (`document.startViewTransition()`) — mesmo
+  truque que `js/diretor-tabs.js` já usa pra troca de aba, agora um
+  terceiro uso no site. Escopado só ao painel "quem somos" — menu e
+  contato continuam com a transição de `transform`/`opacity` de
+  sempre.
+- **Bug real encontrado e corrigido no processo**: a primeira versão
+  do card centralizado só declarava o `transform` de centralização em
+  `.panel--about` (fechado); a regra genérica `.panel.is-open {
+  transform: translateY(0) }` (duas classes, mais específica) vencia
+  assim que o painel abria, jogando o card pra fora da viewport pela
+  direita e tornando o botão "fechar" inclicável. Corrigido redeclarando
+  o `transform` em `.panel--about.is-open` também — mesma solução que
+  `.panel--contact.is-open` já usava, só que a V1.7 esqueceu de copiar
+  de primeira.
+- Verificado via Playwright: card confirmado centralizado
+  (`(1920-1300)/2 = 310px` de cada lado, medido); ordem dos filhos de
+  `.about-content` confirmada (`prose`, depois `about-content__logo`);
+  fonte computada do texto confirmada como Advent Pro; fechamento
+  confirmado funcionando sem timeout depois da correção do bug de
+  centralização; sequência de screenshots durante a abertura
+  confirmando visualmente as três fases do dip (conteúdo antigo
+  dissolvendo, branco, card novo aparecendo); menu conferido à parte
+  sem nenhuma mudança (transição de `transform` de sempre, sem dip).
+  Smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erro de console ou de rede genuíno —
+  os dois avisos que apareceram numa rodada (política de permissão
+  `compute-pressure` do player do YouTube, erro 401 de telemetria do
+  Vimeo) se mostraram intermitentes e específicos dos players de
+  terceiros ao reexecutar, não regressão do código do site.
+
+### 1.7.1
+
+Patch: a V1.7 não cravou a referência de verdade — texto com largura e
+peso aquém do pedido, logo pequeno demais.
+
+- **Texto**: `font-variation-settings` de `'wdth' 175, 'wght' 700` pra
+  `'wdth' 200, 'wght' 900` — os dois no teto do eixo variável da Advent
+  Pro, pedido explícito ("faça o texto ter largura 200 e peso 900").
+- **Logo**: `clamp(160px, 14vw, 220px)` pra `clamp(220px, 22vw, 400px)`
+  — a primeira medida (~17% da largura do card) tinha ficado bem abaixo
+  da proporção da referência (~31%); a nova bate.
+- Verificado via Playwright: `font-variation-settings` computado
+  confirmado como `"wdth" 200, "wght" 900`; proporção logo/card medida
+  em 0.31 (`400px` de logo num card de `1300px`), batendo com a medição
+  da referência; screenshot comparado visualmente lado a lado com a
+  referência enviada. Smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erro de console ou de rede genuíno.
+
+### 1.7.2
+
+Patch: ainda não tinha cravado a referência — faltava apertar a
+entrelinha. "Observe o espaçamento entre as linhas. Diminua, eles devem
+praticamente se tocar. Eu quero um BOLO DE TEXTO."
+
+- **`.panel--about .prose`: `line-height` de `1.25` pra `.9`** — mais
+  apertado que qualquer outra entrelinha do site (`.diretor-nome`/
+  `.title` usam `.94`/`.98`, já os mais justos até então), de
+  propósito: o pedido era um bloco de texto denso, não uma leitura
+  espaçada.
+- **`margin-top` entre parágrafos, de `1em` pra `.5em`** — sem
+  reduzir junto, a folga entre parágrafos ficaria desproporcional
+  perto do espaço quase nulo dentro de cada um.
+- Verificado via Playwright: screenshot comparado visualmente com a
+  referência — linhas praticamente se tocando, como pedido. Smoke test
+  completo (todas as páginas + todos os `projeto.html?slug=...`) sem
+  erro de console ou de rede genuíno.
+
+### 1.7.3
+
+Patch: "DIMINUA O box branco e substitua o FECHAR por um X".
+
+- **`.panel--about`: `width` de `min(1300px, 90vw)` pra `min(900px,
+  85vw)`**, padding reduzido proporcionalmente (`calc(var(--gutter) *
+  1.6) ... calc(var(--gutter) * 1.4)` pra `calc(var(--gutter) * 1.3) ...
+  calc(var(--gutter) * 1.1)`). `.prose` (`max-width: min(900px, 80%)`)
+  não precisou de ajuste — com o card menor, o texto passou a ocupar
+  naturalmente quase toda a largura útil dele.
+- **Botão "fechar" (texto) vira "×" (símbolo)** nas 5 páginas com o
+  painel: marcação trocou pra `class="close close--x"` +
+  `aria-label="Fechar"` (o rótulo por extenso migrou do texto visível
+  pro atributo de acessibilidade, já que `&times;` sozinho não é um
+  nome acessível confiável). `.close--x` reseta o sublinhado e sobe a
+  fonte pra `32px`.
+- **Mesma armadilha de especificidade da V1.7 (terceira vez no
+  projeto).** Primeira versão de `.close--x` era uma classe solta
+  (0-1-0) e perdia pra `.panel--about .close, .panel--contact .close`
+  (0-2-0, mais adiante no arquivo) — o "×" saía sublinhado e a 19px,
+  como se a regra nova não existisse. Corrigido reescopando pra
+  `.panel--about .close--x` (mesma especificidade, depois no arquivo).
+- Verificado via Playwright: `getComputedStyle` confirmando
+  `cardWidth: 900`, `closeText: "×"`, `closeAriaLabel: "Fechar"`,
+  `closeTextDecoration: "none"`, `closeFontSize: "32px"`; clique no "×"
+  ainda fecha o painel corretamente; screenshot revisado visualmente.
+  Smoke test completo (todas as páginas + todos os
+  `projeto.html?slug=...`) sem erro de console ou de rede genuíno além
+  do ruído de terceiro já catalogado (analytics interno do Vimeo, `401`
+  + logs `%c%d`, só nos dois projetos com embed do Vimeo).
+
+### 1.7.4
+
+Patch: "a diminuição do box não ficou boa. Volte para o tamanho
+anterior. Mantenha o 'X'." — o encolhimento do card na V1.7.3 não
+agradou visualmente; o "×" no lugar de "fechar", sim, e ficou.
+
+- **`.panel--about`: `width` de volta a `min(1300px, 90vw)`**, padding
+  de volta a `calc(var(--gutter) * 1.6) var(--gutter) calc(var(--gutter)
+  * 1.4)` — exatamente os valores de antes da V1.7.3. Comentário do
+  patch anterior (`/* PATCH: box menor... */`) removido do CSS junto
+  com a reversão, já que descrevia uma mudança que deixou de existir.
+- **Botão "×" (`.close--x`, `aria-label="Fechar"`) mantido como
+  estava** — nada mexido aqui, só o tamanho do card voltou atrás.
+- Verificado via Playwright: `getComputedStyle` confirmando
+  `cardWidth: 1300` (de volta ao valor pré-V1.7.3), `closeText: "×"`,
+  `closeTextDecoration: "none"`, `closeFontSize: "32px"` (inalterados);
+  clique no "×" ainda fecha o painel; screenshot revisado visualmente
+  contra o card grande de antes. Smoke test completo sem erro de
+  console ou de rede genuíno além do mesmo ruído de terceiro do Vimeo
+  já catalogado.
+
+### 1.7.5
+
+Patch: novo texto pra bio de Ricardo Rapozo, com a instrução "use a
+mesma fonte (peso, largura e entrelinha) do QUEM SOMOS. Faça o box do
+texto do tamanho da foto e da largura da página. Ajuste a fonte para
+caber."
+
+- **Texto novo** (`ricardo-rapozo.html` e `time.html`): removido o
+  parágrafo-epígrafe de abertura ("A memória é um espaço em disputa.")
+  e a última frase do parágrafo final ("Imagens são os moldes de
+  nossas lembranças.") — sobram 2 parágrafos, os do meio, sem
+  alteração no conteúdo deles.
+- **Novo modificador `.diretor-bio--destaque`, só em
+  `ricardo-rapozo.html`** (`css/layout.css`): foto e texto empilham
+  (`grid-template-columns: 1fr`) em vez de dividir a linha; a caixa do
+  texto ganha a largura cheia do grid ("largura da página") e uma
+  altura calculada algebricamente a partir da largura/proporção da
+  foto (`height: calc(38vw * 4/3)`, "tamanho da foto"), sem JS medindo
+  elemento nenhum. Fonte igual ao "quem somos" (`'wdth' 200, 'wght'
+  900`, `line-height: .9`, Advent Pro em vez do Newsreader que `.bio`
+  usa por padrão); regra de epígrafe do primeiro parágrafo
+  (`.diretor-bio .bio p:first-child`) resetada dentro do modificador,
+  já que os dois parágrafos agora usam o mesmo tratamento.
+- **`font-size: 3.3vw`, não `clamp()`** — "ajuste a fonte para caber"
+  virou uma busca binária via Playwright (maior tamanho que ainda cabe
+  na altura da caixa, sem estourar) em seis larguras de tela
+  (1024–2560px); o valor que cabe ficou estável entre 3.34vw e 3.36vw
+  em toda a faixa, porque caixa e texto escalam por `vw` na mesma
+  proporção — um valor fixo em `vw` (com pequena margem de segurança)
+  mantém o texto colado nas bordas da caixa em qualquer largura de
+  desktop.
+- **Mobile**: a conta de altura fixa fica pequena demais numa tela
+  estreita — a caixa solta `height:auto`/`overflow-y:visible` e a
+  fonte cai pra `clamp(22px, 6vw, 30px)`; a foto ganha `width:100%`.
+- **`daniela-luquini.html` e o `.diretor-bio` genérico não mudam** — o
+  modificador é exclusivo do HTML de Ricardo; `time.html` mantém o
+  layout Newsreader de sempre, só com o texto atualizado (evita bio
+  divergente entre as duas páginas que reproduzem o mesmo conteúdo).
+- Verificado via Playwright: `getBoundingClientRect` confirmando
+  `bioH === fotoH` (972.8px em 1920px de viewport) e `scrollHeight <=
+  clientHeight` (sem overflow) em 1024/1280/1440/1680/1920/2560px;
+  screenshots revisados visualmente em desktop (1920px) e mobile
+  (390px); `daniela-luquini.html` e `time.html` conferidos sem
+  regressão visual. Smoke test completo sem erro de console ou de rede
+  genuíno além do ruído de terceiro já catalogado (Vimeo, YouTube
+  `compute-pressure`).
+
+### 1.7.6
+
+Patch: "o texto da bio tem que estar ao lado da foto. CRAVE NA REF" —
+com screenshot do estado da V1.7.5 (empilhado) marcado à mão mostrando
+o texto ao lado da foto, não embaixo. "Largura da página" da instrução
+original não queria dizer "abandone o layout lado a lado" — só que a
+caixa de texto (agora ao lado da foto, como sempre foi) devia ocupar
+toda a largura disponível daquela coluna, esticada até a altura da
+foto.
+
+- **`.diretor-bio--destaque` volta a usar o grid de duas colunas
+  herdado de `.diretor-bio` (`38vw 1fr`)** — a V1.7.5 tinha trocado pra
+  `grid-template-columns: 1fr` (empilhado); essa sobrescrita foi
+  removida.
+- **`align-items: stretch`** substitui o `center` herdado — no lugar do
+  `height: calc(38vw * 4/3)` calculado manualmente da V1.7.5 (que só
+  fazia sentido pra uma caixa de largura total da página), o próprio
+  grid agora estica `.bio` até a altura da linha, que a foto (bem mais
+  alta que duas linhas de texto) já define sozinha. Resultado idêntico
+  na prática ("caixa do tamanho da foto"), mas resolvido pelo mecanismo
+  nativo do grid em vez de uma fórmula.
+- **`font-size` remedido: `2.45vw`, era `3.3vw`.** A coluna lado a lado
+  (`1fr`) é mais estreita que "largura da página inteira" da versão
+  empilhada — cabe menos caracteres por linha, então o mesmo texto
+  precisa de uma fonte menor pra não estourar a altura da caixa. Nova
+  busca binária via Playwright em seis larguras de tela: o tamanho que
+  cabe ficou entre 2.47vw e 2.58vw (só a 1024px caiu a 2.47vw); `2.45vw`
+  fica com margem de segurança abaixo do mínimo medido.
+- Verificado via Playwright: `sideBySide` (topo de `.bio` e de
+  `.diretor-bio__foto` no mesmo Y) `true`, `bioH === fotoH` e
+  `scrollHeight <= clientHeight` (sem overflow) em
+  1024/1280/1440/1680/1920/2560px; screenshot comparado lado a lado com
+  a referência enviada — foto à esquerda, texto à direita, mesma
+  altura, preenchendo a caixa. Mobile revisado visualmente (permanece
+  empilhado, como sempre foi nesse breakpoint). Smoke test completo sem
+  erro de console ou de rede genuíno além do ruído de terceiro já
+  catalogado (Vimeo).
+
+### 1.7.7
+
+Patch: "os textos do menu (sumenu DIRETORES também) devem ter largura
+200 e peso 900 (rede social deixa como está)".
+
+- **`.panel--menu ul a`, `.menu-toggle`, `.submenu a`: `'wght'` de `800`
+  pra `900`** (`'wdth'` já estava em `200`, o teto do eixo). Cobre os
+  4 itens do menu principal (Portfólio, Diretores, Quem somos, Contato)
+  e os 2 nomes do submenu (Ricardo Rapozo, Daniela Luquini) — os três
+  seletores usavam a mesma regra duplicada, então o pedido "submenu
+  também" já caía dentro do escopo, só precisava não esquecer o
+  terceiro seletor.
+- **`.social` (Instagram) e `.submenu-back` ("voltar") não mudam** —
+  pedido explícito de deixar a rede social como está; o botão de voltar
+  do submenu nunca fez parte da pergunta e já segue um tratamento
+  tipográfico diferente (tamanho fixo, sublinhado, mesmo padrão do
+  "fechar" dos painéis), não o dos itens de navegação.
+- Verificado via Playwright: `fontVariationSettings` de todos os 6
+  links do menu (incluindo os dois do submenu, com o submenu aberto)
+  confirmado `"wdth" 200, "wght" 900`; `.social a` confirmado inalterado
+  (`"wdth" 175, "wght" 600`); screenshot do submenu "Diretores" aberto
+  revisado visualmente. Smoke test completo sem erro de console ou de
+  rede genuíno além do ruído de terceiro já catalogado (Vimeo).
+
+### 1.7.8
+
+Patch: "retire animação DIP TO WHITE do QUEM SOMOS. de um fade nos
+elementos (mantém o efeito de cor) e entra o card QUEM SOMOS. FADE IN
+FADE OUT NORMAL."
+
+- **`js/panel.js`: removida a função `usaDip()` e as duas chamadas
+  condicionais a `document.startViewTransition()`** em `abrir()`/
+  `fechar()` — as duas funções voltaram a aplicar a troca de classe
+  direto, sem passar pela View Transitions API. Como nenhum painel
+  restante precisava do caminho alternativo, as duas funções também
+  perderam a estrutura de closure `aplicar()` que só existia pra ser
+  chamada de dois jeitos diferentes — código morto a menos, não só
+  comportamento revertido.
+- **`.panel--about` (`css/base.css`) ganhou de volta `transition:
+  opacity var(--t-panel) var(--ease-out)`**, era `transition: none`
+  (a V1.7 tinha zerado porque toda a animação vinha do dip). Sem
+  `scale` na lista — só opacidade, mais simples que `.panel--contact`
+  (que anima `transform: scale()` junto), como pedido ("FADE IN FADE
+  OUT NORMAL"). A redeclaração de `transform` em `.panel--about.is-open`
+  continua necessária (mesma armadilha de especificidade de sempre,
+  ver acima) — isso não mudou, só a `transition` em volta dela.
+- **`@media (prefers-reduced-motion: reduce)`: `.panel--about` entra na
+  mesma exceção que `.panel--contact` já tinha** (restaura a duração da
+  transição de `opacity`, que o reset genérico `* { transition-duration:
+  .01ms }` zeraria) — mesmo raciocínio, agora as duas regras precisam
+  dela pelo mesmo motivo.
+- **Efeito de cor (`is-overlay-open`) não muda em nada** — nunca esteve
+  acoplado à animação de entrada/saída de painel nenhum, só ao
+  `classList.toggle` que já roda em `sincronizar()`.
+- Verificado via Playwright: `getComputedStyle` durante a transição
+  (80ms depois do clique) mostrando `opacity` fracionário (ex.:
+  `0.633` ao fechar) em vez de saltar direto entre `0` e `1` — confirma
+  fade real, não a troca instantânea que existia antes por trás do
+  dip; `transitionProperty: "opacity"`; `is-overlay-open` e a cor de
+  fundo do `body` confirmados presentes durante a animação. Zero erros
+  de console. Screenshot revisado visualmente. Smoke test completo sem
+  erro de console ou de rede genuíno além do ruído de terceiro já
+  catalogado (Vimeo).
+
+### 1.7.9
+
+Patch: "não está funcionando como eu pedi" — com a descrição de novo,
+mais detalhada: "quando clicamos em QUEM SOMOS, a barra do menu se
+recolhe e o card aparece com fade in no centro do quadro. Permanece o
+efeito de cor no fundo. Sem fade no fundo. APENAS O CARD FAZ FADE IN.
+Ao clicar no X, o card faz FADE OUT."
+
+- **Causa raiz, achada gravando o estado computado quadro a quadro via
+  Playwright**: a V1.7.8 corrigiu o TIPO de animação (fade em vez de
+  dip), mas manteve a sobreposição de 120ms que `abrir()` sempre usou
+  pra trocar de painel sem a tela ficar vazia no meio. Com o card de
+  "quem somos" do tamanho que é (90vw), esses 120ms deixavam o card já
+  começando a aparecer (semitransparente) enquanto o menu AINDA estava
+  visivelmente deslizando pra fora — dois movimentos sobrepostos, o
+  conteúdo da página (fotos, títulos) visível através do card
+  semitransparente ao mesmo tempo, lendo como se o fundo também
+  estivesse animando. Screenshot em `t=150ms` (durante a sobreposição)
+  mostrou exatamente isso: título e foto do projeto por trás,
+  visíveis através do card ainda translúcido, com o menu ainda a meio
+  caminho de sumir.
+- **`js/panel.js`, `abrir()`: espera 480ms antes de abrir "quem somos"
+  vindo de outro painel, em vez dos 120ms padrão** — `var espera =
+  painel === about ? 480 : 120`. 480ms é a mesma duração de
+  `--t-panel` (tokens.css): o suficiente pro menu terminar de
+  deslizar pra fora de verdade antes do card começar a aparecer.
+  Sequência limpa, como pedido: menu recolhe → SÓ DEPOIS o card fade
+  in. Escopado só à abertura de `about`; menu↔contato e o fechamento
+  de qualquer painel continuam com os 120ms de sempre (não foram o que
+  o pedido reclamava).
+- **Nada mudou no "fundo"** — nem o efeito de cor (`is-overlay-open`,
+  sempre foi independente da animação de painel) nem o `body`
+  background (já ficava constante, confirmado por trace anterior) — o
+  que estava "fazendo fade" era o card revelando a página por trás
+  dele enquanto o menu ainda se movia, não o fundo em si.
+- Verificado via Playwright: trace de `opacity`/`transform` quadro a
+  quadro confirmando o menu terminar de sumir (`transform` estável) por
+  volta de 400–480ms, ANTES do card começar a subir de opacidade;
+  `overlay`/cor de fundo constantes do início ao fim. Screenshots em
+  400/550/700ms mostrando o card materializando sobre a página já
+  parada (sem o menu se movendo simultaneamente). Fechar pelo "×"
+  confirmado com fade out (`opacity` fracionário em pleno fechamento,
+  `0` no final, `is-overlay-open` caindo junto). Menu↔contato conferido
+  sem mudança (ainda sobrepõe em 120ms). Zero erros de console. Smoke
+  test completo sem erro de console ou de rede genuíno além do ruído
+  de terceiro já catalogado (Vimeo).
+
+### 1.7.10
+
+Patch: "1. Não deixe barra de rolagem nos textos da bio 2. novo texto
+da bio de daniela [...] APLIQUE A MESMA FORMATACAO DE RICARDO RAPOZO."
+
+- **`overflow-y: hidden`, era `auto`, em `.diretor-bio--destaque
+  .bio`** — o `font-size` calibrado já tinha margem de segurança, mas
+  `auto` ainda podia abrir uma barra de rolagem em condições de borda
+  (hinting de fonte diferente, zoom). `hidden` garante nunca aparecer.
+- **Texto novo da bio de Daniela** (`daniela-luquini.html` e
+  `time.html`): removido o parágrafo de abertura ("Baseada no Reino
+  Unido, Daniela é fotógrafa..."); sobram os 3 parágrafos seguintes,
+  sem alteração no conteúdo deles.
+- **`.diretor-bio--destaque` estendido pra Daniela**
+  (`daniela-luquini.html`: `class="diretor-bio diretor-bio--right
+  diretor-bio--destaque"`) — mesmo modificador de Ricardo, já
+  compatível com `--right` (foto na coluna 2) sem precisar de nenhuma
+  regra nova: `align-items: stretch` e a fonte do "quem somos" não
+  dependem de qual lado a foto fica.
+- **`font-size` do modificador remedido: `2.4vw`, era `2.45vw`** — o
+  valor antigo foi calibrado só pro texto de Ricardo; o de Daniela (3
+  parágrafos, mais uma quebra de parágrafo que Ricardo) precisa de uma
+  fonte um pouco menor pra caber na mesma altura de coluna. Nova busca
+  binária via Playwright rodada pros DOIS textos, seis larguras de tela
+  cada: `2.4vw` fica com margem de segurança abaixo do mais apertado
+  dos dois (o de Daniela, ~2.44vw de teto).
+- **Bug achado e corrigido no processo: `grid-row` não resetado no
+  mobile pra `.diretor-bio--right`.** Só apareceu ao testar Daniela no
+  celular (Ricardo nunca teve esse `grid-row` fixo, então nunca expôs
+  o problema) — screenshot mobile mostrou só o ÚLTIMO parágrafo visível,
+  os outros dois "sumidos". Causa: o breakpoint mobile resetava
+  `grid-column` mas não `grid-row`; o desktop de `--right` fixa os dois
+  itens em `grid-row: 1` (pra ficarem lado a lado), e sem resetar isso
+  no mobile (grid de uma coluna só) os dois continuavam disputando a
+  MESMA célula do grid, esticados um pelo outro via `align-items:
+  stretch` pra uma altura sem sentido que escondia a maior parte do
+  texto atrás da foto opaca. Corrigido com `grid-row: auto` no mesmo
+  lugar onde `grid-column` já era resetado.
+- Verificado via Playwright: `scrollHeight <= clientHeight` (sem
+  overflow, `overflow-y: hidden` confirmado no computed style) pras
+  DUAS bios, seis larguras de tela cada, desktop; mobile (390px)
+  confirmado com as 3 tags `<p>` de Daniela todas presentes E visíveis
+  (`bioTop`/`fotoBottom` batendo, sem sobreposição de célula de grid);
+  screenshots revisados visualmente em desktop e mobile pras duas
+  páginas. Smoke test completo sem erro de console ou de rede genuíno
+  além do ruído de terceiro já catalogado (Vimeo).
+
+### 1.7.11
+
+Patch: "retire o telefone do card de CONTATO".
+
+- **`<p class="contact-card__item"><a href="tel:+5511994780379">...`
+  removido das 5 páginas** (`index.html`, `ricardo-rapozo.html`,
+  `daniela-luquini.html`, `projeto.html`, `time.html`) — o card de
+  contato passa a mostrar só cidade/país e e-mail. Nenhuma mudança de
+  CSS ou JS: `.contact-card__item` já estilizava genericamente
+  "qualquer parágrafo desse tipo dentro do card", sem depender de
+  quantos existem.
+- Verificado via Playwright: `contact-card__item` confirmado com 1 item
+  só (e-mail), `card.querySelector('a[href^="tel:"]')` confirmado
+  `null`. Screenshot revisado visualmente. Smoke test completo sem erro
+  de console ou de rede genuíno além do ruído de terceiro já catalogado
+  (Vimeo).
+
+### 1.7.12
+
+Patch: "1. Card de contato 'São Paulo/SP, Brasil' Adicionar o /SP...
+2. Ao clicar no logo do card QUEM SOMOS, voltamos para o FEED do
+portfolio."
+
+- **`.contact-card__local`: `São Paulo/SP, Brasil`, era `São Paulo,
+  Brasil`** nas 5 páginas — desambigua cidade (São Paulo capital) de
+  estado (SP), mesmo formato do rodapé.
+- **Logo do "quem somos" vira link pro feed (`href="./"`)** — a `<img
+  class="about-content__logo">` passou a viver dentro de `<a
+  class="about-content__logo-link" href="./" aria-label="Voltar para o
+  portfólio">`, nas 5 páginas. Mesmo destino do `.logo` fixo do
+  cabeçalho. `display: block` acrescentado só pra deixar explícito o
+  comportamento que o link já teria como filho direto do flex
+  container; nada mais mudou no CSS do logo em si.
+- Verificado via Playwright: `contact-card__local` confirmado com o
+  texto novo nas 5 páginas; clique em `.about-content__logo-link`
+  confirmado navegando pra `/` a partir de `ricardo-rapozo.html` E de
+  `projeto.html?slug=...` (path relativo `./` funcionando das duas
+  profundidades de URL). Screenshot revisado visualmente. Smoke test
+  completo sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo).
+
+### 1.8
+
+"Quando a página ficar parada por 30 segundos o efeito de cor toma toda a
+página. Ele sai assim que o mouse se mover novamente." Primeiro pedido
+enviado como versão nova (não "PATCH:"), então o número sobe pro próximo
+minor em vez de mais um patch.
+
+- **`js/idle-color.js` (arquivo novo)**, carregado nas 5 páginas junto
+  com `js/panel.js`: `setTimeout(ativar, 30000)`, reiniciado a cada
+  `mousemove`. `ativar()` reaproveita a MESMA classe `is-overlay-open`
+  que os painéis já usam — o efeito de inatividade não é um sistema
+  visual novo, é o efeito de painel existente (fundo sorteado + duotone
+  nas mídias) disparado por um motivo diferente (tempo parado, não um
+  painel aberto).
+- **Duas guardas pra não brigar com `js/panel.js`**, que já controla a
+  mesma classe (recalculando do zero a cada abrir/fechar de painel):
+  `ativar()` não faz nada se algum painel já estiver aberto
+  (`.panel.is-open`); `desativar()` só remove a classe se foi o próprio
+  idle que ligou (flag interna `ativo`) — se um painel ligou a classe,
+  o idle nunca marcou `ativo`, então mover o mouse com um painel aberto
+  não desliga o efeito do painel por engano. `panel.js` não precisou de
+  nenhuma alteração.
+- Verificado via Playwright: teste em tempo real (`waitForTimeout`)
+  confirmando `is-overlay-open` falso até 15s, verdadeiro aos 31s, e
+  falso de novo logo após mover o mouse — com screenshot do efeito
+  ativo. Testes adicionais com `page.clock` (fast-forward sem esperar
+  de verdade) cobrindo a coordenação com painéis: painel aberto + 31s
+  parado + mouse se movendo mantém o efeito do painel intacto do
+  início ao fim (a guarda funcionando); fechar o painel derruba a
+  classe normalmente; os 31s seguintes parado ativam o idle sozinho.
+  Smoke test completo sem erro de console ou de rede genuíno além do
+  ruído de terceiro já catalogado (Vimeo, YouTube `compute-pressure`).
+
+### 1.8.1
+
+Patch: novo projeto — "vamos adicionar um projeto. Chama-se 'Mini-doc
+COP 30 para EMBRAPA' é de FEV/2026 (entre Global Reneable e GREE).
+Busque o Loop em /media. O link do vídeo é ->
+https://youtu.be/5M2Jj39qivc".
+
+- **`minidoc-cop30-embrapa` adicionado a `projetos.json`**: `cliente:
+  "EMBRAPA"`, `ano: 2026`, `registro: "documental"`, `tipo: "single"`,
+  `video` o link do YouTube dado. `data: "2026-08-15"` — não é a data
+  real (fev/2026), é a posição pedida no feed ("entre Global Reneable
+  e GREE"): entre `gree-smartwind-brasil` (`2026-08-18`) e
+  `global-renewable-alliance-cop30` (`2026-08-11`), já que `data` no
+  site é uma ordem de exibição curada, não necessariamente a data real
+  de produção (mesmo padrão que já vinha sendo usado nos outros 7
+  projetos, todos com datas artificiais em sequência semanal).
+- **Loop encontrado em `media/loops/loopEMBRAPA.mp4`** — "busque o
+  loop em /media" foi literal: o arquivo já estava na pasta, só
+  faltava entrar no JSON. Sem poster próprio ainda (`poster: ""`,
+  mesmo padrão do Dancebook/Spaten).
+- **`placeholder: "#616d40"` calculado a partir do próprio vídeo**, não
+  chutado: sem `ffmpeg` disponível no ambiente, gerado um thumbnail via
+  `qlmanage -t` (Quick Look, macOS) e calculada a cor média dos pixels
+  com Python/PIL — tom verde-oliva de floresta, batendo com a cena
+  (registro em mata, tema ambiental/agro coerente com EMBRAPA e COP30).
+- Verificado via Playwright: projeto aparece na 5ª posição do feed da
+  home (entre "Smartwind para Gree" e "COP30 / UN Conference..."),
+  como pedido; `<video>` do loop tocando (`paused:false, readyState:4`)
+  no bloco da home; embed do YouTube carregando na página do projeto
+  (título "MINIDOC EMBRAPA - COP 30" confirmado vindo do player).
+  Smoke test completo (incluindo a nova página
+  `projeto.html?slug=minidoc-cop30-embrapa`) sem erro de console ou de
+  rede genuíno além do ruído de terceiro já catalogado.
+
+### 1.8.2
+
+Patch, mensagem seguinte, mesma sessão: "esse jop 'EMBRAPA' é
+co-diriigido pela Daniela Luquini."
+
+- **`diretor` deixa de ser string única e vira array — mudança de
+  schema, não só do projeto novo.** Os 7 projetos existentes (todos só
+  com Ricardo) migraram de `"diretor": "ricardo-rapozo"` pra
+  `"diretor": ["ricardo-rapozo"]`; o EMBRAPA ficou com
+  `["ricardo-rapozo", "daniela-luquini"]`. Ver detalhes técnicos e o
+  porquê de migrar TODOS em vez de só suportar os dois formatos em
+  paralelo na seção 10 ("Estrutura de arquivos" → `diretor`).
+- **`js/feed.js`**: filtro da galeria de diretor trocou `p.diretor ===
+  slug` por `p.diretor.indexOf(slug) !== -1` — com isso, o projeto
+  passou a aparecer na galeria "trabalhos" TANTO de Ricardo quanto de
+  Daniela, não só de um.
+- **`js/projeto.js`**: a barra do topo da página do projeto resolve
+  cada slug de `p.diretor` pro objeto correspondente em
+  `window.DIRETORES`, monta um `<a>` por diretor, e junta os nomes
+  (vírgula entre os do meio, " e " antes do último) — "Ricardo Rapozo e
+  Daniela Luquini: Mini-doc COP 30 para EMBRAPA" na página do EMBRAPA;
+  nos outros 7 projetos (um só diretor), o resultado é idêntico a
+  antes, sem juntador nenhum.
+- Verificado via Playwright: `projetos.json` validado como JSON válido
+  (`python3 -m json` roundtrip) com os 8 `diretor` já em array;
+  EMBRAPA confirmado presente na galeria de `ricardo-rapozo.html` E de
+  `daniela-luquini.html`; barra da página do projeto confirmada com os
+  dois nomes linkados corretamente pros respectivos HTMLs. Smoke test
+  completo sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado.
+
+### 1.8.3
+
+Patch: "Retire da lista, por ora, o projeto SPATEN. O lançamento dessa
+campanha é na sexta-feira. Vamos esperar o lançamento oficial. O
+resto, mantenha como está."
+
+- **`spaten-fight-night` removido de `projetos.json`** — retenção
+  editorial deliberada, não bug nem mídia faltando (ver seção 11,
+  "Pendências", pro lembrete de religar depois do lançamento). Os
+  arquivos de mídia (3 loops + 5 fotos) NÃO foram apagados do repo, só
+  o objeto no JSON — basta reinserir quando a campanha for ao ar.
+- **Sem nenhuma outra mudança** — pedido explícito de manter o resto
+  como estava.
+- Verificado via Playwright: feed da home confirmado sem "Spaten"
+  (7 projetos, era 8); galeria "trabalhos" de Ricardo Rapozo confirmada
+  sem o projeto; acesso direto a
+  `projeto.html?slug=spaten-fight-night` cai no fallback já existente
+  ("Projeto não encontrado."), sem erro de console. Smoke test completo
+  (a lista de slugs é lida direto de `projetos.json`, então já não
+  testa mais o slug removido) sem erro de console ou de rede genuíno
+  além do ruído de terceiro já catalogado (Vimeo).

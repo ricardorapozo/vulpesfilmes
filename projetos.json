@@ -1,12 +1,13 @@
 [
   {
     "slug": "cbcc-2026",
-    "titulo": "Cobertura Conferência Brasileira de Carbono 2026",
+    "titulo": "Conferência Brasileira de Carbono 2026 para Aliança Brasil NBS",
     "cliente": "",
     "ano": 2026,
+    "data": "2026-09-01",
     "registro": "documental",
     "tipo": "carousel",
-    "diretor": "ricardo-rapozo",
+    "diretor": ["ricardo-rapozo"],
     "video": "https://youtu.be/vB-p7HZ4F18",
     "placeholder": "#b9ad9a",
     "midia": [
@@ -25,12 +26,13 @@
   },
   {
     "slug": "dancebook-brasil",
-    "titulo": "Dancebook Brasil\nVideocase para LOVELY",
+    "titulo": "Dancebook Brasil, Gold Lion Design 2026 para Lovely.",
     "cliente": "LOVELY",
     "ano": 2025,
+    "data": "2026-08-25",
     "registro": "publicitario",
     "tipo": "carousel",
-    "diretor": "ricardo-rapozo",
+    "diretor": ["ricardo-rapozo"],
     "video": "https://youtu.be/9i_7-qpm3D8",
     "placeholder": "#7a1420",
     "midia": [
@@ -48,12 +50,13 @@
   },
   {
     "slug": "gree-smartwind-brasil",
-    "titulo": "Gree Smartwind Brasil",
+    "titulo": "Smartwind para Gree",
     "cliente": "",
     "ano": 2025,
+    "data": "2026-08-18",
     "registro": "publicitario",
     "tipo": "single",
-    "diretor": "ricardo-rapozo",
+    "diretor": ["ricardo-rapozo"],
     "video": "https://youtu.be/R5TITPHVX5A",
     "placeholder": "#4a5a6b",
     "midia": [
@@ -66,13 +69,34 @@
     "galeria": []
   },
   {
-    "slug": "global-renewable-alliance-cop30",
-    "titulo": "Global Renewable Alliance - COP 30",
-    "cliente": "",
-    "ano": 2025,
+    "slug": "minidoc-cop30-embrapa",
+    "titulo": "Mini-doc COP 30 para EMBRAPA",
+    "cliente": "EMBRAPA",
+    "ano": 2026,
+    "data": "2026-08-15",
     "registro": "documental",
     "tipo": "single",
-    "diretor": "ricardo-rapozo",
+    "diretor": ["ricardo-rapozo", "daniela-luquini"],
+    "video": "https://youtu.be/5M2Jj39qivc",
+    "placeholder": "#616d40",
+    "midia": [
+      {
+        "loop": "media/loops/loopEMBRAPA.mp4",
+        "poster": "",
+        "alt": "Mini-doc COP 30 para EMBRAPA, vídeo em loop"
+      }
+    ],
+    "galeria": []
+  },
+  {
+    "slug": "global-renewable-alliance-cop30",
+    "titulo": "COP30 / UN Conference for Global Renewable Alliance",
+    "cliente": "",
+    "ano": 2025,
+    "data": "2026-08-11",
+    "registro": "documental",
+    "tipo": "single",
+    "diretor": ["ricardo-rapozo"],
     "video": "https://vimeo.com/1166997708?fl=tl&fe=ec",
     "placeholder": "#4f6b52",
     "midia": [
@@ -86,12 +110,13 @@
   },
   {
     "slug": "dossie-anonimo",
-    "titulo": "Dossiê Anônimo",
+    "titulo": "O Mistério da Ilha dos Caranguejos para Dossiê Anônimo",
     "cliente": "",
     "ano": 2025,
+    "data": "2026-08-04",
     "registro": "autoral",
     "tipo": "single",
-    "diretor": "ricardo-rapozo",
+    "diretor": ["ricardo-rapozo"],
     "video": "https://youtu.be/pPmAcD78Cq8?si=UUxX3dKi91mb8iTL",
     "placeholder": "#3a3f42",
     "midia": [
@@ -105,12 +130,13 @@
   },
   {
     "slug": "historias-do-brasil-redes",
-    "titulo": "Histórias do Brasil\nProjeto ReDes",
+    "titulo": "Histórias do Brasil para Projeto ReDes do Instituto Votorantim",
     "cliente": "Instituto Votorantim",
     "ano": 2026,
+    "data": "2026-07-28",
     "registro": "documental",
     "tipo": "single",
-    "diretor": "ricardo-rapozo",
+    "diretor": ["ricardo-rapozo"],
     "video": "https://vimeo.com/1123794473?share=copy&fl=sv&fe=ci",
     "placeholder": "#c2b8a3",
     "midia": [

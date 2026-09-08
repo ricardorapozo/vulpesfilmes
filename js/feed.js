@@ -97,7 +97,7 @@
     var galeria = document.querySelector('.galeria[data-diretor]');
     if (galeria) {
       var slug = galeria.getAttribute('data-diretor');
-      var lista = window.PROJETOS.filter(function (p) { return p.diretor === slug; });
+      var lista = window.PROJETOS.filter(function (p) { return p.diretor.indexOf(slug) !== -1; });
       render(lista, galeria);
     }
   });

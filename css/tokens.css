@@ -27,12 +27,19 @@
   --ease-out: cubic-bezier(.22, .61, .36, 1);
   --t-text: .175s;
   --t-panel: .48s;
+  --t-page: .6s;
 
   /* planos */
   --z-title: 1;
   --z-media: 2;
-  --z-arrow: 3;
   --z-gallery: 4;
+  /* V1.5: acima de --z-gallery e do z-index:3 hardcoded de .slide__link/
+     .media__play (css/layout.css) — as setas precisam ficar por CIMA do
+     alvo de clique invisível que cobre o slide inteiro, senão ele
+     intercepta o clique antes de chegar na seta (empatavam em 3 antes
+     disso; quem vem depois no DOM ganha o empate, e o link do slide vem
+     depois da seta). */
+  --z-arrow: 5;
   --z-panel: 50;
   --z-chrome: 60;
 }

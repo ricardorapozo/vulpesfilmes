@@ -1,7 +1,9 @@
 /* Carrossel de fotos (lightbox): clicar numa foto de .galeria-fotos abre a
    imagem grande, com setas pra navegar entre as fotos daquela galeria.
    Assim como o modal de vídeo, é deliberadamente separado do sistema de
-   painel — fundo escuro de cinema, conteúdo dinâmico por clique.
+   painel — conteúdo dinâmico por clique, fora do fundo sorteado por
+   sessão dos painéis. Fundo branco (não escuro de cinema como o modal
+   de vídeo) desde a V1.6 — pedido explícito pra esse lightbox.
 
    Lê a lista de fotos direto do DOM (todas as <img> dentro da mesma
    .galeria-fotos clicada), não de projetos.json — funciona pra qualquer
@@ -32,9 +34,13 @@
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
     modal.inert = false;
-    /* V11: mesmo tratamento do modal de vídeo — logo e hambúrguer somem
-       enquanto a foto está em tela, só "fechar" fica acessível. */
-    document.documentElement.classList.add('is-lightbox-open');
+    /* V11: tratamento parecido com o modal de vídeo (hambúrguer some,
+       mesmo conflito de posição com "fechar"), mas com classe própria —
+       `is-photo-open`, não `is-lightbox-open`. Fundo branco (patch da
+       V1.6) pedia o logo continuar visível aqui; `is-lightbox-open`
+       esconderia os dois, então essa tela precisava da própria classe
+       pra CSS diferenciar (ver base.css). */
+    document.documentElement.classList.add('is-photo-open');
     fechar.focus();
   }
 
@@ -42,7 +48,7 @@
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
     modal.inert = true;
-    document.documentElement.classList.remove('is-lightbox-open');
+    document.documentElement.classList.remove('is-photo-open');
     imgEl.src = '';
     if (gatilho) gatilho.focus();
     gatilho = null;

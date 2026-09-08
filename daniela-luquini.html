@@ -37,12 +37,11 @@
   </section>
 
   <section id="tab-bio" class="diretor-painel" hidden>
-    <div class="diretor-bio diretor-bio--right">
+    <div class="diretor-bio diretor-bio--right diretor-bio--destaque">
       <div class="diretor-bio__foto">
         <img src="media/time/daniela-luquini.jpg" alt="Retrato de Daniela Luquini" width="516" height="700">
       </div>
       <div class="bio" lang="pt-BR">
-        <p>Baseada no Reino Unido, Daniela é fotógrafa dedicada a capturar momentos autênticos, pessoas e histórias com uma abordagem natural e contemporânea.</p>
         <p>Ao longo dos últimos dez anos, construiu um portfólio internacional diverso, passando por eventos corporativos, moda, cultura, arte e conteúdo, sempre olhando além do assunto em si para capturar a atmosfera, a emoção e o caráter de cada projeto.</p>
         <p>Seu trabalho já a levou a eventos de prestígio ao redor do mundo, incluindo as Conferências das Nações Unidas sobre Mudança do Clima (COP), a London Fashion Week, a TEFAF Maastricht, a Milano Design Week, a ITB Berlin e a WTM London.</p>
         <p>Ela acredita que as imagens mais fortes nascem de conexões genuínas, colaboração e do cuidado em deixar as pessoas à vontade. Seu objetivo não é apenas documentar uma ocasião, mas criar imagens que sejam humanas, contem uma história e ofereçam uma perspectiva única sobre cada projeto.</p>
@@ -54,10 +53,9 @@
 
 </main>
 
-<footer>
-  <p>&copy; 2026 vulpesfilmes</p>
-  <p><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a></p>
-  <p>São Paulo / Brasil. Atendendo o mundo todo.</p>
+<footer class="footer-invertido">
+  <p><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a> &copy; 2026</p>
+  <p>São Paulo/SP - Brasil. Atendendo o mundo todo.</p>
 </footer>
 
 <nav id="menu" class="panel panel--menu" aria-label="Navegação principal">
@@ -75,29 +73,28 @@
     <li><a href="#contato" data-abre="contato">Contato</a></li>
   </ul>
   <p class="social">
-    <a href="#">vimeo</a><span aria-hidden="true">/</span>
-    <a href="#">instagram</a><span aria-hidden="true">/</span>
-    <a href="#">youtube</a>
+    <a href="#">instagram</a>
   </p>
 </nav>
 
 <section id="quem-somos" class="panel panel--about" aria-label="Quem somos">
-  <button type="button" class="close" data-fecha>fechar</button>
+  <button type="button" class="close close--x" data-fecha aria-label="Fechar">&times;</button>
   <div class="about-content">
-    <img class="about-content__logo" src="media/vulpesFilmes-LOGO-HORIZONTAL.png" alt="vulpesfilmes" width="1791" height="772">
     <div class="prose">
       <p>A Vulpes é um pequeno bureau de soluções audiovisuais. Um lugar para pensar, criar e dar forma a ideias.</p>
       <p>Trabalhamos onde estratégia encontra imagem: na direção, no roteiro, na edição, no motion e na pós-produção. Entramos no projeto conforme o que ele pede, juntando olhar criativo, repertório e precisão técnica para transformar uma boa ideia em algo que realmente mereça ser visto.</p>
     </div>
+    <a class="about-content__logo-link" href="./" aria-label="Voltar para o portfólio">
+      <img class="about-content__logo" src="media/vulpesFilmes-LOGO-HORIZONTAL.png" alt="vulpesfilmes" width="1791" height="772">
+    </a>
   </div>
 </section>
 
 <section id="contato" class="panel panel--contact" aria-label="Contato" role="dialog" aria-modal="true" aria-hidden="true">
   <button type="button" class="close" data-fecha>fechar</button>
   <div class="contact-card">
-    <p class="contact-card__local">São Paulo, Brasil</p>
-    <p class="contact-card__item"><a href="mailto:contato@vulpesfilmes.com.br">contato@vulpesfilmes.com.br</a></p>
-    <p class="contact-card__item"><a href="tel:+5511994780379">+55 11 994780379</a></p>
+    <p class="contact-card__local">São Paulo/SP, Brasil</p>
+    <p class="contact-card__item"><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a></p>
   </div>
 </section>
 
@@ -111,6 +108,7 @@
 <script src="js/diretores.js"></script>
 <script src="js/projetos.js"></script>
 <script src="js/panel.js"></script>
+<script src="js/idle-color.js"></script>
 <script src="js/diretor-tabs.js"></script>
 <script src="js/feed.js?v=5"></script>
 <script src="js/media.js"></script>

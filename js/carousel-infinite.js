@@ -169,5 +169,71 @@ document.addEventListener('feed:pronto', function () {
     var next = car.querySelector('.arrow--next');
     if (prev) prev.hidden = false;
     if (next) next.hidden = false;
+
+    /* V1.4: arrastar com o mouse pra rolar — toque já rola sozinho (é o
+       `overflow-x: auto` padrão do navegador respondendo ao gesto nativo
+       de swipe; nunca precisou de JS). O que faltava era só o mouse, que
+       não tem gesto de arrastar embutido no browser pra scroll
+       horizontal. Pointer Events com filtro por `pointerType`: só ativa
+       esse comportamento pra mouse — toque e caneta continuam exatamente
+       no scroll nativo, sem passar por aqui, pra não arriscar atrapalhar
+       o que já funcionava.
+
+       Funciona de graça com o `-webkit-user-drag: none` que já existe em
+       `img, video` (V17, proteção contra download): sem ele, o
+       `pointerdown` num `<img>`/`<video>` dispararia o drag nativo do
+       navegador (arrastar a imagem pra fora da janela) em vez do nosso
+       `pointermove` — os dois brigariam pelo mesmo gesto.
+
+       De propósito, SEM `setPointerCapture`: capturar o ponteiro faz o
+       navegador reencaminhar o `click` resultante pro próprio `track`
+       (não pro elemento que está visualmente sob o cursor), e
+       `js/video-modal.js` procura `[data-video]` com `closest()` — que
+       olha só pra ancestrais, nunca pra descendentes. Com o clique
+       reencaminhado pro `track`, `.media__play` (descendente) nunca era
+       encontrado, e um clique normal (sem arrastar nada) parava de abrir
+       o vídeo. `pointermove`/`pointerup` direto no `window`, em vez de
+       no `track`, resolve sem precisar de captura — e como bônus
+       continua arrastando mesmo se o cursor sair da área do carrossel
+       no meio de um gesto rápido. */
+    var arrastando = false;
+    var moveuDeVerdade = false;
+    var inicioX = 0;
+    var inicioScroll = 0;
+
+    track.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      arrastando = true;
+      moveuDeVerdade = false;
+      inicioX = e.clientX;
+      inicioScroll = track.scrollLeft;
+    });
+
+    window.addEventListener('pointermove', function (e) {
+      if (!arrastando) return;
+      var delta = e.clientX - inicioX;
+      if (Math.abs(delta) > 4) moveuDeVerdade = true;
+      track.scrollLeft = inicioScroll - delta;
+    });
+
+    function soltarArraste() {
+      arrastando = false;
+    }
+    window.addEventListener('pointerup', soltarArraste);
+    window.addEventListener('pointercancel', soltarArraste);
+
+    /* Sem isto, soltar o mouse depois de arrastar também dispara "click"
+       em cima do que estiver embaixo do cursor — abriria o vídeo ou
+       navegaria pro projeto só por ter arrastado o carrossel, mesmo sem
+       intenção de clicar em nada. Fase de captura (`true`) pra agir antes
+       de qualquer handler de clique do próprio slide
+       (`.media__play`/`.slide__link`). */
+    track.addEventListener('click', function (e) {
+      if (moveuDeVerdade) {
+        e.preventDefault();
+        e.stopPropagation();
+        moveuDeVerdade = false;
+      }
+    }, true);
   });
 });
