@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.8.4.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.8.5.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -3339,3 +3339,17 @@ existe um arquivo previewVulpes.jpg. Trabalhe isso."
   5 páginas; `media/previewVulpes.jpg` confirmada respondendo `200` com
   `content-type: image/jpeg`. Smoke test completo sem erro de console
   ou de rede genuíno além do ruído de terceiro já catalogado (Vimeo).
+
+### 1.8.5
+
+Patch: "mude o título para 'COP30/UN Conference for Global Renewable
+Alliance'".
+
+- **`global-renewable-alliance-cop30`: título de "COP30 / UN Conference
+  for Global Renewable Alliance" pra "COP30/UN Conference for Global
+  Renewable Alliance"** — só o espaçamento ao redor da barra, resto do
+  texto igual.
+- Verificado via Playwright: título confirmado no feed da home e na
+  barra do topo da página do projeto. Smoke test completo sem erro de
+  console ou de rede genuíno além do ruído de terceiro já catalogado
+  (Vimeo).
