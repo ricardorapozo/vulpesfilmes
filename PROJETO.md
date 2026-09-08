@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.9.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.9.1.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1089,10 +1089,11 @@ grande + mídia ambiente clicável (abrindo o vídeo de verdade num modal)
    (sem fundo próprio — um patch chegou a dar fundo em pílula pra
    resolver contraste sobre o vídeo, mas foi revertido: "erro meu",
    segundo o próprio pedido) — `[Diretor]: [Título do projeto]`,
-   inteira em Inter (era Newsreader até a V1.9), `font-size: clamp(12px,
-   1.3vw, 16px)` (V1.9 — era `clamp(13px, 1.3vw, 17px)`; "diminua um
-   ponto a fonte título", 1px a menos nos dois limites do `clamp`). O
-   nome do diretor é link pra página dele
+   inteira em Inter (era Newsreader até a V1.9), `font-size: clamp(11px,
+   1.3vw, 15px)` (dois patches seguidos pedindo "diminua um ponto",
+   1px a menos nos dois limites do `clamp` a cada vez: `17px/13px` →
+   `16px/12px` (V1.9) → `15px/11px` (V1.9.1)). O nome do diretor é link
+   pra página dele
    (`<slug>.html`, resolvido via `window.DIRETORES` — `js/diretores.js`
    agora carregado também em `projeto.html`, só pra isso), sempre
    sublinhado — não só no hover/foco como o resto dos links do site;
@@ -3465,3 +3466,16 @@ ponto a fonte título ([diretor][titulo]) da pagina de projetos."
   `time.html`, card de contato, barra do topo de projeto). Smoke test
   completo sem erro de console ou de rede genuíno além do ruído de
   terceiro já catalogado (Vimeo).
+
+### 1.9.1
+
+Patch: "reduza mais um ponto" — pergunta anterior confirmou o tamanho
+então em uso (`clamp(12px, 1.3vw, 16px)`), pedido seguinte reduziu mais
+1px nos dois limites.
+
+- **`.projeto-barra`: `font-size` de `clamp(12px, 1.3vw, 16px)` pra
+  `clamp(11px, 1.3vw, 15px)`** — mesmo `1.3vw` no meio, só os limites
+  min/max desceram 1px de novo.
+- Verificado via Playwright: `font-size` computado confirmado `15px`
+  no viewport testado. Smoke test completo sem erro de console ou de
+  rede genuíno além do ruído de terceiro já catalogado (Vimeo).
