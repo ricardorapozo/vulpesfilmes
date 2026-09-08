@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.8.7.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.9.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -169,7 +169,12 @@ toggle da classe.
 
 ## 3. Tipografia
 
-Família única: **Advent Pro** (Google Fonts, variável, eixos `wdth` 100–200 e `wght` 100–900).
+Display: **Advent Pro** (Google Fonts, variável, eixos `wdth` 100–200 e `wght`
+100–900) — títulos, menu, "quem somos". Corpo de texto/leitura corrida:
+**Inter** (ver "Sans-serif no lugar de Newsreader" abaixo) — bio dos
+diretores, cartão de contato, e a barra `[Diretor]: [Título]` do topo da
+página de projeto (pequena/discreta o bastante pra pedir a mesma fonte de
+leitura corrida, não a de destaque).
 
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Advent+Pro:wdth,wght@100..200,100..900&display=swap');
@@ -197,6 +202,38 @@ Consequência editorial: em `wdth 200` cada palavra ocupa quase o dobro da largu
 Títulos de projeto devem caber em duas linhas no desktop. "Cobertura Conferência
 Brasileira de Carbono 2026" já é o limite superior — títulos mais longos que esse
 precisam ser encurtados na redação, não no CSS.
+
+### Sans-serif no lugar de Newsreader (V1.9)
+
+"Vamos mudar a fonte 'News reader', precisamos de uma fonte sem serifa.
+Limpa e leve." **Inter** substitui a Newsreader em TODO lugar que a
+usava — não é uma troca pontual num componente, é a fonte de leitura
+corrida do site inteiro:
+
+```css
+@import url('https://fonts.googleapis.com/css2?family=Advent+Pro:wdth,wght@100..200,100..900&family=Inter:wght@300..700&display=swap');
+```
+
+- `.bio` (bio dos diretores em `time.html`; nas páginas de diretor,
+  `.diretor-bio--destaque .bio` sobrescreve pra Advent Pro por cima
+  disso, ver seção 6 — não afetado por essa troca)
+- `.contact-card__item` (e-mail no card de contato)
+- `.projeto-barra` (`[Diretor]: [Título]`, topo da página de projeto)
+
+As três regras ganharam `font-weight: 300` explícito — o peso mais leve
+que o range importado (`300..700`) permite, direto ao pedido "leve".
+Faixa de peso importada (`300..700`) deixada mais ampla que o uso atual
+(só `300`) de propósito: dá espaço pra usar um peso mais forte em algum
+componente futuro sem precisar editar o `@import`.
+
+**Por que Inter, e não outra sans-serif**: pedido não nomeou uma fonte
+específica, só o critério ("sem serifa, limpa e leve") — Inter é uma
+escolha segura e testada para texto corrido pequeno (foi desenhada
+para telas, com bom espaçamento em tamanhos de parágrafo), com peso
+leve disponível nativamente na variável do Google Fonts, sem competir
+visualmente com a Advent Pro (que já cobre todo o papel "display" do
+site). Se não agradar, é uma troca de uma linha no `@import` + três
+`font-family`.
 
 ---
 
@@ -955,7 +992,8 @@ Documentação abaixo já reflete a versão corrigida e estendida:
   em `time.html`** (mesmo conteúdo nas duas páginas que reproduzem cada
   bio, pra não divergir), mas o modificador `.diretor-bio--destaque` só
   vai nos HTMLs das páginas de diretor. `time.html` mantém o layout
-  Newsreader de sempre pros dois, só com o texto atualizado.
+  em Inter de sempre pros dois (era Newsreader até a V1.9), só com o
+  texto atualizado.
 - **Continua o grid de duas colunas herdado de `.diretor-bio`/
   `.diretor-bio--right`** (`38vw 1fr` pro Ricardo, `1fr 38vw` pra
   Daniela — o modificador não mexe em `grid-template-columns`, só em
@@ -985,7 +1023,8 @@ Documentação abaixo já reflete a versão corrigida e estendida:
   uma linha inteira de texto — `hidden` garante que isso nunca aparece,
   não importa o navegador/hinting de fonte.
 - **Mesma fonte do "quem somos"**: `font-family: 'Advent Pro'`
-  (explícito aqui porque `.bio` de base usa Newsreader),
+  (explícito aqui porque `.bio` de base usa Inter, sans-serif, desde a
+  V1.9 — era Newsreader antes),
   `font-variation-settings: 'wdth' 200, 'wght' 900`, `line-height: .9`.
   A regra de epígrafe do primeiro parágrafo (`.diretor-bio .bio
   p:first-child`) é resetada dentro do modificador (`font-weight/
@@ -1050,7 +1089,10 @@ grande + mídia ambiente clicável (abrindo o vídeo de verdade num modal)
    (sem fundo próprio — um patch chegou a dar fundo em pílula pra
    resolver contraste sobre o vídeo, mas foi revertido: "erro meu",
    segundo o próprio pedido) — `[Diretor]: [Título do projeto]`,
-   inteira em Newsreader. O nome do diretor é link pra página dele
+   inteira em Inter (era Newsreader até a V1.9), `font-size: clamp(12px,
+   1.3vw, 16px)` (V1.9 — era `clamp(13px, 1.3vw, 17px)`; "diminua um
+   ponto a fonte título", 1px a menos nos dois limites do `clamp`). O
+   nome do diretor é link pra página dele
    (`<slug>.html`, resolvido via `window.DIRETORES` — `js/diretores.js`
    agora carregado também em `projeto.html`, só pra isso), sempre
    sublinhado — não só no hover/foco como o resto dos links do site;
@@ -1432,8 +1474,10 @@ especificidade igual ou maior que `.panel--about .close, .panel--contact
 mudança da mesma referência visual ("CRAVE A REFERÊNCIA"): esse painel
 virou destaque tipográfico grande e centralizado, não mais leitura
 corrida discreta em serif (`clamp(16px, 1.5vw, 20px)`, entrelinha 1.5,
-à esquerda, 52ch) — o tratamento que tinha desde a V11. A Newsreader
-não desapareceu do site: continua em `.bio` e no cartão de contato
+à esquerda, 52ch) — o tratamento que tinha desde a V11 (serif Newsreader
+até a V1.9; ver "Sans-serif no lugar de Newsreader" na seção 3, a fonte
+trocou de vez, não só aqui). O corpo de texto corrido continua fora do
+"quem somos" mesmo — `.bio` e o cartão de contato
 (`.contact-card__item`) — só deixou de ser a fonte do "quem somos".
 
 **`'wdth' 200, 'wght' 900` (patch — era `175`/`700` na primeira versão
@@ -3390,3 +3434,34 @@ DXdqCU5ujmM e suba de novo o loop da pasta media 'loopReDes.mp4'".
   entrar na viewport. Smoke test completo sem erro de console ou de
   rede genuíno além do ruído de terceiro já catalogado (Vimeo, agora só
   no projeto COP30/UN Conference).
+
+### 1.9
+
+Patch: "Vamos mudar a fonte 'News reader' precisamos de uma fonte sem
+serifa. Limpa e leve. 1. Mudar para fonte Sans Serif 2. diminua um
+ponto a fonte título ([diretor][titulo]) da pagina de projetos."
+
+- **Newsreader (serif) substituída por Inter (sans-serif) em todo
+  lugar que a usava** — `@import` trocado em `css/base.css`
+  (`family=Inter:wght@300..700`, no lugar de
+  `family=Newsreader:opsz,wght@6..72,300..700`); `.bio`,
+  `.contact-card__item` e `.projeto-barra` (as três regras que
+  declaravam `font-family: 'Newsreader', Georgia, serif`) trocaram pra
+  `'Inter', sans-serif`, com `font-weight: 300` explícito (o peso mais
+  leve do range importado — "leve" era parte explícita do pedido). Ver
+  seção 3, "Sans-serif no lugar de Newsreader", pro porquê da escolha
+  e o que NÃO foi afetado (`.diretor-bio--destaque .bio`, que já
+  sobrescrevia pra Advent Pro por cima da regra genérica).
+- **`.projeto-barra`: `font-size` de `clamp(13px, 1.3vw, 17px)` pra
+  `clamp(12px, 1.3vw, 16px)`** — "diminua um ponto a fonte título
+  ([diretor][titulo]) da pagina de projetos", 1px a menos nos dois
+  limites do `clamp` (o meio, `1.3vw`, não mudou).
+- Verificado via Playwright: `font-family` computado confirmado
+  `Inter, sans-serif` em `.bio` (`time.html`), `.contact-card__item`
+  e `.projeto-barra`; `.diretor-bio--destaque .bio` (páginas de
+  diretor) confirmado continuando `"Advent Pro", sans-serif`, sem
+  regressão; `font-size` de `.projeto-barra` confirmado `16px` no
+  viewport testado. Screenshots revisados visualmente (bio do
+  `time.html`, card de contato, barra do topo de projeto). Smoke test
+  completo sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo).

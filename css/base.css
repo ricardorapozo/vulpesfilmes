@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Advent+Pro:wdth,wght@100..200,100..900&family=Newsreader:opsz,wght@6..72,300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Advent+Pro:wdth,wght@100..200,100..900&family=Inter:wght@300..700&display=swap');
 
 /* V1.1: transição entre páginas — View Transitions API "cross-document"
    (Chrome/Edge 126+; navegadores sem suporte simplesmente navegam sem
@@ -451,7 +451,8 @@ html.is-photo-open .burger { display: none; }
 }
 
 .contact-card__item {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
   font-size: clamp(16px, 1.5vw, 20px);
   line-height: 1.5;
 }
@@ -472,7 +473,8 @@ html.is-photo-open .burger { display: none; }
 }
 
 .bio {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
 }
 
 /* ---------- modal de vídeo ----------
