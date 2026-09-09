@@ -45,7 +45,7 @@
       var liPortfolio = document.createElement('li');
       var aPortfolio = document.createElement('a');
       aPortfolio.href = './';
-      aPortfolio.textContent = 'Portfólio';
+      aPortfolio.textContent = 'Projetos';
       liPortfolio.appendChild(aPortfolio);
       ul.appendChild(liPortfolio);
       

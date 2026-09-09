@@ -67,10 +67,18 @@
     var p = (window.PROJETOS || []).find(function (item) { return item.slug === slug; });
 
     if (!p) {
+      document.documentElement.classList.remove('is-projeto-sem-galeria');
       main.innerHTML = '<p class="feed__erro">Projeto não encontrado.</p>';
       document.dispatchEvent(new CustomEvent('feed:pronto'));
       return;
     }
+
+    /* V1.10: sem galeria, a página vira "só o player" — vídeo enchendo
+       a viewport, sem rolagem, sem rodapé, botão "fechar" no lugar do
+       burger (ver css/layout.css, `html.is-projeto-sem-galeria`). Com
+       galeria, mantém o esquema de sempre (rolagem normal, burger,
+       galeria de fotos abaixo do vídeo). */
+    document.documentElement.classList.toggle('is-projeto-sem-galeria', !(p.galeria && p.galeria.length));
 
     var nome = p.titulo.replace(/\n/g, ' ');
     document.title = nome + ' — vulpesfilmes';

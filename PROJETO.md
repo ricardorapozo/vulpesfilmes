@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.9.1.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.10.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -651,6 +651,13 @@ Fica acima do menu no eixo Z — no mockup 3 ele continua legível com o painel 
 
 ### Menu
 
+- **Primeiro item, "Projetos" (V1.10) — era "Portfólio".** "vamos mudar
+  a nomenclatura da página PORTFOLIO, agora vai se chamar PROJETOS."
+  Só o texto do link muda (`<a href="./">`, mesmo destino de sempre);
+  nenhuma URL, arquivo ou estrutura foi renomeada — é `index.html` por
+  baixo, como sempre foi. `js/chrome.js` (não usado por nenhum HTML
+  hoje, mantido em sincronia por precaução — ver seção 10) também
+  atualizado, pelo mesmo motivo.
 - Painel desce do topo com altura natural do conteúdo, sem espaço negativo e sem scroll (overflow hidden).
 - Ao abrir: `--paper` do `body` vira `--hue`, hambúrguer vira X, mídias entram em duotone.
 - Fundo do painel: branco puro (`--panel-bg: #FFFFFF`), não sorteado.
@@ -1127,6 +1134,62 @@ grande + mídia ambiente clicável (abrindo o vídeo de verdade num modal)
    direto num `<iframe>` (YouTube/Vimeo) ou `<video>` (mp4 local) com
    autoplay, dentro de `.projeto-video`.
 
+**Sem galeria, a página vira "só o player" — vídeo enchendo a viewport,
+sem rolagem, sem rodapé, "fechar" no lugar do burger (V1.10).** Pedido
+explícito, com referência visual: "Quando ela NÃO TIVER GALERIA veremos
+apenas o player do vídeo, sem rolagem da página... temos o botão
+'fechar' no canto superior direito ao invés do menu burguer... não
+temos rodapé." `js/projeto.js` decide sozinho, em `render()`, sem
+nenhuma configuração nova em `projetos.json`: `p.galeria` vazio ou
+ausente vira `html.classList.toggle('is-projeto-sem-galeria', true)` —
+toda a mudança de layout é CSS reagindo a essa classe, zero HTML
+gerado a mais.
+
+- **`.projeto-fechar`** — `<a href="./">fechar</a>` novo, estático em
+  `projeto.html`, `position:fixed; top:18px; right:var(--gutter)`,
+  exatamente o mesmo canto do `.burger`. `display:none` por padrão;
+  `html.is-projeto-sem-galeria .burger { display:none }` +
+  `html.is-projeto-sem-galeria .projeto-fechar { display:inline-block
+  }` — os dois nunca aparecem juntos, um substitui o outro no mesmo
+  lugar. Sem menu acessível nessa variante (o burger é o único jeito
+  de abrir `#menu`) — "quem somos"/"contato" ficam inacessíveis a
+  partir de uma página de projeto sem galeria, de propósito: o pedido
+  é uma experiência de "só o vídeo", não uma versão reduzida do menu.
+  `.projeto-voltar` também some (`display:none`) — sem rolagem, ele
+  nunca seria alcançável mesmo, e "fechar" já cobre a função de sair
+  da página.
+- **Sem rolagem**: `html.is-projeto-sem-galeria, html.is-projeto-sem-
+  galeria body { height:100%; overflow:hidden }` — mesmo princípio de
+  `html.is-overlay-open { overflow:hidden }` (seção 2), travando a
+  PÁGINA; quem se adapta é o vídeo, não o contrário.
+- **Vídeo enche o espaço**: `.projeto-corpo` vira `height:100vh;
+  display:flex; flex-direction:column`; `#conteudo-projeto` (== `.feed`,
+  cujo `padding-top` já reserva a folga do chrome fixo) vira `flex:1;
+  min-height:0` pra ocupar o resto da altura; `.projeto-video` também
+  `flex:1; min-height:0`, `padding-inline:0` (full-bleed, sem gutter
+  lateral — "só o player"); o `<iframe>`/`<video>` dentro ganha
+  `height:100%` e perde o `aspect-ratio:16/9` fixo (a proporção real do
+  vídeo passa a ser secundária ao espaço disponível na viewport —
+  pode letterboxar ou esticar levemente conforme a proporção original).
+  `min-height:0` em cada nível é o que permite um item flex encolher
+  abaixo do tamanho do próprio conteúdo — sem isso, o vídeo (com sua
+  altura intrínseca) empurraria a página pra fora da viewport de novo,
+  reintroduzindo a rolagem que essa variante existe pra evitar.
+- **Mobile**: a barra `[Diretor]: [Título]` não pode herdar o truque
+  "vira faixa branca grudada no rodapé" (item 1 acima) — não há rodapé
+  nem rolagem pra sustentar isso aqui. Volta pro tratamento fixo-no-topo
+  do desktop, mas sem `left:50%` centralizando na viewport INTEIRA
+  (numa tela estreita, isso colocava a caixa da barra por baixo do
+  logo) — `left`/`right` calculados a partir da largura de
+  `.logo`/`.projeto-fechar` (~125px/~60px, texto fixo — "vulpesfilmes"
+  e "fechar" não mudam) + folga, confinando a barra ao espaço real
+  entre os dois vizinhos, com `text-overflow:ellipsis` cortando o
+  título quando não couber.
+- **Com galeria, nada disso se aplica** — `is-projeto-sem-galeria`
+  nunca entra, a página mantém o esquema de sempre (item 1/2 acima,
+  rolagem normal, burger, galeria de fotos abaixo do vídeo). Único
+  efeito do V1.10 nesse caso: perde o rodapé também (ver abaixo).
+
 **O que saiu da página de projeto nessa reformulação** — mas continua
 existindo e em uso na home/galeria de diretor, só não mais aqui, então
 nada foi apagado do site, só parou de aparecer nesse template
@@ -1197,6 +1260,16 @@ continua 100% escrito por JS (`main.innerHTML = html`, que nunca toca
 nos irmãos dele), e o link continua HTML estático em `projeto.html`,
 só que agora dentro do wrapper em vez de solto entre `<main>` e
 `<footer>`.
+
+**`<footer>` removido de `projeto.html` de vez na V1.10** ("item 6:
+o rodapé só aparece na página principal") — o mecanismo de sticky
+acima continua funcionando exatamente igual (ele nunca dependeu do
+`<footer>` existir, só da caixa de `.projeto-corpo`), mas o motivo
+original ("nunca sobrepor o rodapé") deixou de existir nessa página:
+sem nada depois de `.projeto-corpo`, "o fim do wrapper" e "o fim da
+página" agora são a mesma coisa. Deixado como está por ser
+estruturalmente inofensivo e já testado — só a razão histórica ficou
+obsoleta, não o código.
 
 **Cuidado se mexer aqui:** como `<p>` é um elemento de bloco, a caixa
 dele ocupa a largura inteira mesmo com o texto alinhado à direita —
@@ -1571,7 +1644,20 @@ transições de cor e duotone. O menu ainda funciona, só troca de estado sem an
 
 ## 8. Rodapé
 
-Componente presente em todas as páginas, ao fim de `<main>`.
+**Removido de `projeto.html` na V1.10 — continua em todas as outras
+páginas.** Pedido dentro da reformulação da página de projeto (ver
+seção 6, "Página de projeto"): "não temos rodapé" (variante sem
+galeria) + "retire o rodapé" (variante com galeria) + "ATENÇÃO: O
+RODAPÉ SÓ APARECE NA PAGINA PRINCIPAL (que agora se chama PROJETOS)" —
+lido como reforço desses dois pedidos anteriores (a lista inteira era
+sobre "a página PROJETO", não um pedido sitewide), confirmado
+explicitamente: escopo é só `projeto.html`. `index.html`,
+`ricardo-rapozo.html`, `daniela-luquini.html` e `time.html` mantêm o
+rodapé de sempre, sem nenhuma mudança. Motivo prático em
+`projeto.html`: a variante "sem galeria" trava a rolagem e faz o vídeo
+ocupar a viewport inteira — não sobraria espaço pro rodapé mesmo se
+ele continuasse no HTML; a variante "com galeria" só perdeu o rodapé
+mesmo, sem nenhuma outra mudança de layout.
 
 **Conteúdo, em duas linhas (V1.3.3 — antes eram três, um `<p>` por
 frase):**
@@ -3479,3 +3565,62 @@ então em uso (`clamp(12px, 1.3vw, 16px)`), pedido seguinte reduziu mais
 - Verificado via Playwright: `font-size` computado confirmado `15px`
   no viewport testado. Smoke test completo sem erro de console ou de
   rede genuíno além do ruído de terceiro já catalogado (Vimeo).
+
+### 1.10
+
+Patch, com referência visual (screenshot marcado à mão): "1. ESTRUTRAL
+- vamos mudar a nomenclatura da página PORTFOLIO, agora vai se chamar
+PROJETOS. 2. vamos mudar o layout da página PROJETO. Quando ela NÃO
+TIVER GALERIA veremos apenas o player do vídeo, sem rolagem da página.
+3. temos o botão 'fechar' no canto superior direito ao invés do menu
+burguer. 4. não temos rodapé. 5. Quando a página tiver galeria, mantenha
+o mesmo esquema de antes, mas retire o rodapé. 6. ATENÇÃO: O RODAPÉ SÓ
+APARECE NA PAGINA PRINCIPAL (que agora se chama PROJETOS)."
+
+- **"Portfólio" → "Projetos"** no primeiro item do menu, nas 5 páginas
+  (mais `js/chrome.js`, órfão mas mantido em sincronia). Só o texto do
+  link — `index.html` continua sendo o destino, nenhuma URL mudou.
+- **`projeto.html` sem galeria: "só o player".** Nova classe
+  `html.is-projeto-sem-galeria`, decidida por `js/projeto.js` em
+  `render()` a partir de `p.galeria` vazio/ausente — todo o resto é CSS
+  reagindo a ela: página trava a rolagem (`overflow:hidden` em
+  `html`/`body`, mesmo princípio de `is-overlay-open`); `.projeto-corpo`
+  vira coluna flex de `100vh`; `#conteudo-projeto` e `.projeto-video`
+  viram `flex:1; min-height:0` pra ocupar o espaço que sobra; o
+  `<iframe>`/`<video>` ganha `height:100%` e perde o `aspect-ratio:16/9`
+  fixo, se ajustando à viewport em vez do contrário. `.burger` some,
+  substituído por `.projeto-fechar` (link novo, `<a href="./">fechar
+  </a>`, mesmo canto fixo que o burger ocupava) — sem burger, o menu
+  (quem somos/contato) fica inacessível nessa variante, de propósito.
+  `.projeto-voltar` também some (sem rolagem, nunca seria alcançável).
+- **`projeto.html` com galeria: mesmo esquema de sempre**, sem nenhuma
+  mudança de comportamento — só perde o rodapé, igual à variante sem
+  galeria.
+- **`<footer>` removido de `projeto.html`, nas duas variantes.** Escopo
+  confirmado com o usuário (a redação do item 6, isolada, seria lida
+  como sitewide; o pedido inteiro sendo sobre "a página PROJETO"
+  sugeria escopo mais estreito — perguntado, confirmado: só
+  `projeto.html`). `index.html`, `ricardo-rapozo.html`,
+  `daniela-luquini.html` e `time.html` mantêm o rodapé de sempre, sem
+  nenhuma mudança.
+- **Mobile: colisão nova entre logo/barra/fechar, achada e corrigida no
+  processo.** Reaproveitar a centralização `left:50%` do desktop pra
+  `.projeto-barra` no modo sem galeria colocava a caixa da barra por
+  baixo do logo em telas estreitas (`.logo` e `.projeto-fechar` têm
+  largura fixa — "vulpesfilmes"/"fechar" não mudam — mas a barra
+  centralizada na viewport inteira não sabia disso). Corrigido
+  ancorando a barra pelas duas bordas (`left`/`right` calculados a
+  partir da largura de cada vizinho + folga) em vez de centralizar
+  cegamente.
+- Verificado via Playwright: sem galeria — `scrollHeight === innerHeight`
+  (zero rolagem) confirmado em desktop E mobile, `.burger` `display:
+  none`, `.projeto-fechar` visível e navegando pra `/` ao clicar,
+  `<footer>` ausente, testado com YouTube E Vimeo (os dois provedores
+  de vídeo em uso no site); com galeria — burger visível, fechar
+  oculto, `<footer>` ausente mesmo rolando até o fim, `scrollHeight >
+  innerHeight` (rolagem normal preservada). Menu confirmado com label
+  "Projetos" nas 5 páginas; `index.html` confirmado com rodapé intacto.
+  Screenshots revisados visualmente (desktop e mobile, com e sem
+  galeria) — resultado comparado contra a referência visual enviada.
+  Smoke test completo sem erro de console ou de rede genuíno além do
+  ruído de terceiro já catalogado (Vimeo).

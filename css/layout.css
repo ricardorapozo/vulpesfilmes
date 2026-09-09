@@ -644,6 +644,108 @@ html.is-overlay-open .galeria-fotos__item::after {
   transform-origin: left;
 }
 
+/* ---------- página de projeto sem galeria: "só o player" (V1.10) ----------
+   Pedido explícito: "Quando ela NÃO TIVER GALERIA veremos apenas o
+   player do vídeo, sem rolagem da página... temos o botão 'fechar' no
+   canto superior direito ao invés do menu burguer... não temos
+   rodapé." `js/projeto.js` decide (`p.galeria` vazio ou não) e alterna
+   a classe `is-projeto-sem-galeria` no `<html>` — todo o resto abaixo
+   é reação a essa classe, sem JS adicional nenhum. Projeto COM
+   galeria mantém o esquema de sempre (rolagem normal, burger, galeria
+   abaixo do vídeo) — só perde o rodapé, item 6: "o rodapé só aparece
+   na página principal" (ver `<footer>` removido de `projeto.html`
+   direto no HTML, não depende dessa classe). */
+
+.projeto-fechar {
+  display: none;
+  position: fixed;
+  top: 18px;
+  right: var(--gutter);
+  z-index: var(--z-chrome);
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
+html.is-projeto-sem-galeria .burger { display: none; }
+html.is-projeto-sem-galeria .projeto-fechar { display: inline-block; }
+html.is-projeto-sem-galeria .projeto-voltar { display: none; }
+
+/* Trava a rolagem da PÁGINA — o vídeo é que preenche o espaço
+   disponível, ele que se ajusta à viewport, não o contrário. Mesmo
+   princípio de `html.is-overlay-open { overflow: hidden }` (seção 2),
+   aplicado aqui por um motivo diferente (layout "só o player", não o
+   efeito de cor). */
+html.is-projeto-sem-galeria,
+html.is-projeto-sem-galeria body {
+  height: 100%;
+  overflow: hidden;
+}
+
+html.is-projeto-sem-galeria .projeto-corpo {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `#conteudo-projeto` (== `.feed`) já reserva o `padding-top` do chrome
+   fixo (logo/barra) — só precisa virar `flex: 1` pra ocupar o resto da
+   altura da viewport, com `min-height: 0` pra um filho flex conseguir
+   encolher abaixo do tamanho do próprio conteúdo (senão o vídeo
+   empurraria a altura pra fora da viewport, voltando a ter rolagem). */
+html.is-projeto-sem-galeria #conteudo-projeto {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Vídeo enche o espaço inteiro: sem gutter lateral (full-bleed — "só o
+   player"), `aspect-ratio` fixo de 16:9 sai de cena (senão a largura
+   ditaria a altura e sobraria ou faltaria espaço vertical); a
+   proporção real de cada vídeo passa a ser secundária à viewport
+   disponível. */
+html.is-projeto-sem-galeria .projeto-video {
+  flex: 1;
+  min-height: 0;
+  padding-inline: 0;
+}
+
+html.is-projeto-sem-galeria .projeto-video iframe,
+html.is-projeto-sem-galeria .projeto-video video {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+@media (max-width: 820px) {
+  /* Sem isso, a versão sem galeria herdaria o truque mobile de
+     `.projeto-barra` virar faixa branca grudada no rodapé (regra
+     acima, fora deste bloco `is-projeto-sem-galeria`) — mas aqui não
+     há rodapé nem rolagem pra sustentar esse truque. Volta pro mesmo
+     tratamento fixo-no-topo do desktop — mas SEM centralizar na
+     viewport inteira: numa tela estreita, `left:50%` + `max-width:
+     60vw` colocava a caixa da barra por baixo do logo (`.logo` mede
+     ~125px, "vulpesfilmes" nesse tamanho de fonte; `.projeto-fechar`
+     ~60px, "fechar"). Em vez disso, ancora nas duas bordas —
+     `left`/`right` calculados a partir da largura de cada vizinho +
+     folga — deixando a barra confinada ao espaço real que sobra entre
+     os dois, com `text-overflow: ellipsis` cortando o que não couber. */
+  html.is-projeto-sem-galeria .projeto-barra {
+    position: fixed;
+    top: 18px;
+    bottom: auto;
+    left: calc(var(--gutter) + 125px + 12px);
+    right: calc(var(--gutter) + 60px + 12px);
+    transform: none;
+    max-width: none;
+    width: auto;
+    background: none;
+    padding: 0;
+  }
+}
+
 /* ---------- página de projeto (vídeo + galeria de fotos) ----------
    Uma coluna só, sem alternância de lado — a página é sobre um projeto
    só, não faz sentido dividir em bloco+coluna vazia. */
