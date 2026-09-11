@@ -712,16 +712,22 @@ html.is-projeto-sem-galeria #conteudo-projeto {
 /* Vídeo enche o espaço disponível dentro da margem — V1.10 tinha feito
    isso full-bleed (`padding-inline: 0`, vídeo colado nas bordas da
    janela); V1.14 corrigiu com referência visual: "não deixei o player
-   do vídeo colado na janela. RESPEITE AS MARGENS." `padding` agora nos
-   quatro lados (`var(--gutter)`, mesmo valor usado nas margens da
-   galeria e do vídeo COM galeria) — o vídeo continua enchendo o que
-   sobra depois da margem, não a viewport inteira; `aspect-ratio: auto`
-   continua fora de cena (a proporção real do vídeo é secundária ao
-   espaço retangular disponível, que já não é mais edge-to-edge). */
+   do vídeo colado na janela. RESPEITE AS MARGENS." `padding` nos
+   quatro lados na V1.14 criou um problema novo, corrigido aqui na
+   V1.15: o TOPO já tinha uma folga própria vindo de outro lugar — o
+   `padding-top` do chrome fixo em `#conteudo-projeto` (herdado de
+   `.feed`, `calc(var(--logo-clearance) + 10px)` ≈ 66px) — e o
+   `padding-top: var(--gutter)` (44px) daqui se somava a isso, dando
+   ≈110px de margem no topo contra 44px nos outros três lados. "o
+   quadro do vídeo está com uma margem muito grande na parte superior."
+   `padding-top: 0` aqui resolve: o topo já tem sua própria folga
+   (a do chrome), só faltava não competir com ela — os outros três
+   lados continuam com `var(--gutter)`, sem folga extra nenhuma
+   competindo com eles. */
 html.is-projeto-sem-galeria .projeto-video {
   flex: 1;
   min-height: 0;
-  padding: var(--gutter);
+  padding: 0 var(--gutter) var(--gutter);
 }
 
 html.is-projeto-sem-galeria .projeto-video iframe,

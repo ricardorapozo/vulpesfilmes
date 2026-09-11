@@ -68,6 +68,20 @@
     if (e.target === fechar || fechar.contains(e.target) || e.target === modal) { fecharModal(); return; }
     if (e.target === prev || prev.contains(e.target)) { mostrar(indice - 1); return; }
     if (e.target === next || next.contains(e.target)) { mostrar(indice + 1); return; }
+
+    /* V1.16: área de clique maior — a foto inteira navega, não só a
+       seta. "Ao clicar no lado direito da foto vamos para a próxima
+       foto. Ao clicar na área esquerda, a anterior retorna." Metade
+       calculada pela largura de RENDERIZAÇÃO da própria imagem
+       (`getBoundingClientRect`), não do `.photo-modal__frame` — a
+       imagem usa `object-fit: contain` e pode sobrar área vazia ao
+       redor dela dentro do frame; clicar nessa sobra não deveria
+       contar como "lado" da foto. */
+    if (e.target === imgEl) {
+      var meio = imgEl.getBoundingClientRect().left + imgEl.getBoundingClientRect().width / 2;
+      mostrar(e.clientX < meio ? indice - 1 : indice + 1);
+      return;
+    }
   });
 
   document.addEventListener('keydown', function (e) {

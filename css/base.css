@@ -268,8 +268,17 @@ html:has(.menu-toggle[aria-expanded='true']) .burger { display: none; }
    dois competiriam por clique e por foco de teclado); o logo (canto
    oposto, sem conflito de posição nenhum) fica sempre visível — sem
    fundo escuro em nenhum dos dois modais, não existe mais "modo
-   cinema" que justificasse escondê-lo também. */
-html.is-photo-open .burger { display: none; }
+   cinema" que justificasse escondê-lo também.
+
+   `.projeto-voltar` entra na mesma lista (V1.16) — bug achado testando
+   a navegação por clique na foto: em `projeto.html` (V1.11), o burger
+   sumiu de vez e "voltar" ficou fixo no MESMO canto (`top:19px;
+   right:var(--gutter)`, ver seção 6 do PROJETO.md) — abrir a galeria
+   de fotos ali sobrepõe "voltar" e o "fechar" do lightbox, os dois
+   ilegíveis um por cima do outro. Mesmo motivo, mesma solução: esconde
+   enquanto o lightbox está aberto. */
+html.is-photo-open .burger,
+html.is-photo-open .projeto-voltar { display: none; }
 
 .panel--menu ul a {
   display: inline-block;
@@ -588,12 +597,18 @@ html.is-photo-open .burger { display: none; }
   place-items: center;
 }
 
+/* V1.16: clicar na foto navega (metade esquerda = anterior, direita =
+   próxima — ver js/photo-modal.js) além das setas, que continuam como
+   reforço visual. `cursor: pointer` sozinho não distingue as metades
+   pro visitante — aceitável, a seta em cada lado já indica a direção;
+   o clique na foto é só uma área maior pra fazer a mesma coisa. */
 .photo-modal__img {
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
+  cursor: pointer;
 }
 
 .photo-modal__frame .arrow { position: absolute; }

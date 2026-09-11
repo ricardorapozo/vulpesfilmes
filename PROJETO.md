@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.14.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.16.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1180,12 +1180,21 @@ mais.
   display:flex; flex-direction:column`; `#conteudo-projeto` (== `.feed`,
   cujo `padding-top` já reserva a folga do chrome fixo) vira `flex:1;
   min-height:0` pra ocupar o resto da altura; `.projeto-video` também
-  `flex:1; min-height:0`, com `padding: var(--gutter)` nos quatro
-  lados (a V1.10 original tinha `padding-inline:0`, vídeo colado nas
-  bordas da janela — corrigido a partir de referência visual: "não
-  deixei o player do vídeo colado na janela. RESPEITE AS MARGENS", o
-  mesmo `var(--gutter)` já usado nas margens da galeria/vídeo com
-  galeria, seção 6 mais acima); o `<iframe>`/`<video>` dentro ganha
+  `flex:1; min-height:0`, com `padding: 0 var(--gutter) var(--gutter)`
+  (a V1.10 original tinha `padding-inline:0`, vídeo colado nas bordas
+  da janela — corrigido a partir de referência visual: "não deixei o
+  player do vídeo colado na janela. RESPEITE AS MARGENS", o mesmo
+  `var(--gutter)` já usado nas margens da galeria/vídeo com galeria,
+  seção 6 mais acima). **O topo é `0`, não `var(--gutter)` — bug achado
+  e corrigido na V1.15**: a V1.14 original tinha posto `padding:
+  var(--gutter)` nos QUATRO lados, mas o topo já tinha folga própria
+  vindo de outro lugar (`padding-top` do chrome fixo em
+  `#conteudo-projeto`, herdado de `.feed`, ≈66px) — as duas folgas se
+  somavam, dando ≈110px de margem no topo contra 44px nos outros três
+  lados. "o quadro do vídeo está com uma margem muito grande na parte
+  superior." `padding-top: 0` aqui resolve — o topo já tem sua própria
+  folga, só faltava não competir com ela. O `<iframe>`/`<video>` dentro
+  ganha
   `height:100%` e perde o `aspect-ratio:16/9` fixo (a proporção real do
   vídeo passa a ser secundária ao espaço retangular disponível — que já
   não é mais edge-to-edge — pode letterboxar ou esticar levemente
@@ -1227,6 +1236,34 @@ visível** enquanto ele está aberto. Isso introduziu uma classe própria,
 modal de vídeo passou a usar a mesma classe e o mesmo tratamento de
 fundo, então os dois lightboxes do site hoje se comportam de forma
 idêntica nesse aspecto.
+
+**Navegação por clique na própria foto (V1.16), além das setas.** "Hoje
+o usuário precisa clicar na seta para rolar as fotos... ao clicar no
+lado direito da foto vamos para a próxima foto, ao clicar na área
+esquerda a imagem anterior retorna." `js/photo-modal.js`: o mesmo
+listener de clique do modal ganhou um terceiro caso — clique com
+`e.target === imgEl` calcula o meio da imagem por
+`getBoundingClientRect()` (a LARGURA DE RENDERIZAÇÃO da própria
+`<img>`, não do `.photo-modal__frame` ao redor dela — a imagem usa
+`object-fit: contain` e pode sobrar área vazia dentro do frame; clicar
+nessa sobra não deveria contar como "lado" da foto) e chama `mostrar()`
+pra trás ou pra frente conforme `e.clientX` cair antes ou depois desse
+meio. As setas continuam existindo e funcionando (checadas antes desse
+novo caso no mesmo `if`/`else` sequencial) — a foto clicável é uma área
+maior pra fazer a mesma coisa, não uma substituição.
+
+**Bug achado testando a navegação por clique: `.projeto-voltar` some
+enquanto o lightbox está aberto, junto com o `.burger` (V1.16).** Desde
+a V1.11, `.projeto-voltar` (link "voltar" de `projeto.html`) é
+`position:fixed` no MESMO canto que `.photo-modal__close` sempre
+ocupou (`top:~18px; right:var(--gutter)`) — a regra que já escondia o
+`.burger` enquanto um lightbox está aberto (`html.is-photo-open
+.burger`, pro mesmo tipo de conflito com o "fechar" do modal de vídeo)
+não sabia da existência de `.projeto-voltar`, que não existia quando
+essa regra foi escrita. Resultado: abrir a galeria de fotos em
+`projeto.html` sobrepunha "voltar" e "fechar" no mesmo canto, os dois
+ilegíveis. Corrigido incluindo `.projeto-voltar` na mesma regra —
+mesmo motivo, mesma solução já usada pro burger.
 
 **Margens e espaçamento da galeria corrigidos em dois patches seguidos
 (V1.12 e V1.13), a partir de referências marcadas à mão.** V1.12, dois
@@ -3819,5 +3856,56 @@ vídeo colado na janela. RESPEITE AS MARGENS. Ver ref."
   provedor); `scrollHeight === innerHeight` confirmado continuando
   (zero rolagem, não regrediu). Screenshots revisados visualmente
   (desktop e mobile) contra a referência "certa" enviada. Smoke test
+  completo sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo).
+
+### 1.15
+
+Patch, com duas referências (uma marcada com X vermelho): "o quadro do
+vídeo está com uma margem muito grande na parte superior. O que está
+com o X vermelho é o errrado. CRAVE NA REFERENCIA."
+
+- **Bug introduzido na V1.14, corrigido aqui**: `padding: var(--gutter)`
+  nos QUATRO lados de `.projeto-video` (variante sem galeria) somava
+  com o `padding-top` que o chrome fixo já reservava em
+  `#conteudo-projeto` (herdado de `.feed`, ≈66px) — dando ≈110px de
+  margem no topo contra 44px nos outros três lados, quase o dobro.
+  Corrigido pra `padding: 0 var(--gutter) var(--gutter)` — topo `0`
+  (já tem folga própria vindo do chrome fixo), os outros três lados
+  continuam com `var(--gutter)`.
+- Verificado via Playwright: `iframeTop` confirmado em `66px` (igual à
+  folga do chrome fixo sozinha, sem duplicar) contra `44px` nos outros
+  três lados — mesma magnitude relativa que os outros lados sempre
+  tiveram entre si. Screenshots revisados visualmente (desktop e
+  mobile) contra a referência "certa" enviada. Smoke test completo sem
+  erro de console ou de rede genuíno além do ruído de terceiro já
+  catalogado (Vimeo).
+
+### 1.16
+
+Pedido: "é possível aplicar uma navegação diferente na galeria?... a
+area de cliques maior? Ao clicar no lado direito da foto nós vamos
+para a próxima foto. Ao clicar na área esquerda da foto, a imagem
+anterior retorna."
+
+- **`js/photo-modal.js`: clique na própria foto navega** — metade
+  esquerda volta, metade direita avança, calculado pela largura de
+  renderização real da `<img>` (`getBoundingClientRect()`), não do
+  frame ao redor dela. Setas continuam funcionando, inalteradas — a
+  foto clicável é uma área extra, não uma substituição.
+  `.photo-modal__img` ganhou `cursor: pointer`.
+- **Bug achado durante o teste, não relacionado à navegação em si:
+  `.projeto-voltar` sobrepunha o "fechar" do lightbox de fotos.** Desde
+  a V1.11, os dois ocupam o mesmo canto fixo (`top:~18px;
+  right:var(--gutter)`) — a regra que já escondia `.burger` nesse
+  mesmo conflito (`html.is-photo-open .burger`) não incluía
+  `.projeto-voltar`, que não existia quando ela foi escrita. Corrigido
+  incluindo `.projeto-voltar` na mesma regra.
+- Verificado via Playwright: clique na metade direita da foto
+  confirmado avançando pra próxima (`src` mudou); clique na esquerda
+  confirmado voltando pra anterior; seta `next` confirmada continuando
+  funcional depois disso; testado em desktop e mobile. Sobreposição
+  "voltar"/"fechar" confirmada resolvida via screenshot (só "fechar"
+  visível com o lightbox aberto). Zero erros de console. Smoke test
   completo sem erro de console ou de rede genuíno além do ruído de
   terceiro já catalogado (Vimeo).
