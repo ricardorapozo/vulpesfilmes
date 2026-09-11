@@ -669,12 +669,16 @@ html.is-photo-open .projeto-voltar { display: none; }
    V1.2 (que tinha posto e-mail/endereço em Newsreader, só o copyright
    ficando na Advent Pro). `'wght' 700` (era 600) é o que garante o
    "bold" pedido; sem uma regra própria pra `footer p`, as três linhas
-   herdam isso igual, não precisa de seletor específico pro copyright. */
+   herdam isso igual, não precisa de seletor específico pro copyright.
+
+   V1.17.5: `14px` → `16px` ("aumente a fonte 2 pontos") — `'wght' 700`
+   já é o "bold" pedido de novo na mesma leva, não precisou mudar
+   (era esse o peso desde a V1.3). */
 footer {
   padding: 24px var(--gutter);
   background: transparent;
   font-variation-settings: 'wdth' 100, 'wght' 700;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink);
 }
 
@@ -690,18 +694,23 @@ footer p {
    seletor próprio.
 
    V1.17.3: "o rodapé não será mais preto, ele terá a cor aleatória que
-   está reservada pro efeito cor" — fundo vira `var(--hue)` (a mesma
-   variável do efeito de cor sorteado por sessão, `js/hue.js`), sempre,
+   está reservada pro efeito cor" — fundo virou `var(--hue)`, sempre,
    não só quando um painel abre (igual o preto de antes: constante,
-   painel aberto ou não — só a cor que mudou). Texto volta a preto: a
-   regra base `footer { color: var(--ink) }` já resolve sozinha, então
-   esta classe não precisa mais sobrescrever `color`.
+   painel aberto ou não — só a cor que mudou). Texto voltou a preto.
 
    V1.17.4: "tire a borda preta do box do rodapé. SEM BORDA" — o
    `border-top` (regra base `footer`) foi removido de vez, não só
-   trocado de cor. */
+   trocado de cor.
+
+   V1.17.5: inverte de novo — "deixe a barra do rodapé preto" + "a
+   fonte deve ter a cor aleatória do efeito cor". Fundo volta a
+   `var(--ink)` (preto, como era antes da V1.17.3); quem passa a usar
+   `var(--hue)` agora é o TEXTO, não o fundo — troca completa de qual
+   dos dois carrega a cor da sessão. `a { color: inherit }` (topo deste
+   arquivo) resolve o link do e-mail sozinho, sem seletor próprio. */
 footer.footer-invertido {
-  background: var(--hue);
+  background: var(--ink);
+  color: var(--hue);
 }
 
 footer a {

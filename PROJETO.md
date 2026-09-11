@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.17.4.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.17.5.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -192,7 +192,7 @@ em qualquer painel (`body { transition: background-color var(--t-panel) }`,
 `.28s` no overlay de cor das mídias) — nenhuma CSS nova foi necessária, só o
 toggle da classe.
 
-### Rodapé (V1.17.3)
+### Rodapé (V1.17.3, invertido na V1.17.5)
 
 Único elemento que usa `--hue` como cor PERMANENTE, não condicionada a
 `.is-overlay-open` — a variável já tem um valor desde o carregamento da
@@ -200,11 +200,16 @@ página (sorteada por `js/hue.js`, ver "Estado painel aberto" acima, que
 roda antes de qualquer painel abrir), então o rodapé simplesmente
 aparece nessa cor o tempo todo, painel aberto ou não, mouse parado ou
 não. Antes (V1.6) era preto fixo, pelo mesmo motivo inverso: "ele
-mantém preto/claro o tempo todo" — só a cor de referência que trocou de
-preto pra `--hue`. Texto e borda usam `--ink` (preto), herdado da regra
-base do `footer` — a paleta de `--hue` é toda de luminância média-alta
-de propósito (ver "Regras da paleta" acima), então preto sempre
-contrasta bem em cima. Ver seção 8, "Rodapé", para o CSS completo.
+mantém preto/claro o tempo todo".
+
+**V1.17.3 → V1.17.5, quem carrega a cor trocou de lugar:** a V1.17.3
+pôs `--hue` no FUNDO (texto preto); a V1.17.5 inverteu — "deixe a barra
+do rodapé preto" + "a fonte deve ter a cor aleatória do efeito cor" —
+fundo volta a `--ink` (preto, como era desde a V1.6) e o TEXTO passa a
+usar `--hue`. A paleta de `--hue` é toda de luminância média-alta de
+propósito (ver "Regras da paleta" acima), então o texto continua
+legível em cima do preto — mesma garantia que antes valia pro preto
+sobre a cor. Ver seção 8, "Rodapé", para o CSS completo.
 
 ---
 
@@ -1828,11 +1833,12 @@ ocupar a viewport inteira — não sobraria espaço pro rodapé mesmo se
 ele continuasse no HTML; a variante "com galeria" só perdeu o rodapé
 mesmo, sem nenhuma outra mudança de layout.
 
-**Conteúdo, em duas linhas (V1.3.3 — antes eram três, um `<p>` por
-frase):**
+**Conteúdo, em três linhas (V1.17.5 — era duas desde a V1.3.3, que
+tinha ido de três pra duas; um `<p>` por linha):**
 
 - `contato@vulpesfilmes.com` (link `mailto:`) ` © 2026`
-- `São Paulo/SP - Brasil. Atendendo o mundo todo.`
+- `São Paulo/SP, Brasil`
+- `Atendendo o mundo todo`
 
 O copyright voltou a usar a entidade `&copy;` (`©`) — a V1.3.3 tinha
 trocado por `(C)` como texto, revertido na V1.3.4 — e perdeu o nome
@@ -1849,7 +1855,9 @@ V8** — continuam só no menu (`.panel--menu .social`), não duplicadas aqui.
 
 - `wdth` 100, peso 700 (V1.3; era 600 desde a V6, e por uma leva breve
   — V1.2 — o copyright era a única linha nesse peso, com e-mail e
-  endereço em Newsreader). 14px. Nada de `wdth` 200.
+  endereço em Newsreader). 16px (era 14px, aumentado na V1.17.5 —
+  "aumente a fonte 2 pontos"; o peso 700 já era o "bold" pedido na
+  mesma leva, não precisou mudar). Nada de `wdth` 200.
 - **Rodapé inteiro em Advent Pro, em negrito (V1.3).** A V1.2 tinha
   posto e-mail e endereço em Newsreader (mesmo serif do resto do texto
   corrido do site, `.bio`/`.panel--about .prose`), com só o copyright
@@ -1857,26 +1865,25 @@ V8** — continuam só no menu (`.panel--menu .social`), não duplicadas aqui.
   mesma fonte e o mesmo peso, sem seletor específico por linha
   (`footer p:not(:first-child)` foi removido; a regra `footer` sozinha
   já cobre as três).
-- **Fundo `--hue`, texto preto (V1.6, cor trocada na V1.17.3)**:
-  `footer.footer-invertido { background: var(--hue); }`, marcado direto
-  no HTML (`<footer class="footer-invertido">`) das 4 páginas do site
-  que têm rodapé (`projeto.html` não tem, ver acima). Nasceu escopado
-  só à página de projeto (item da reformulação da V1.6, fundo preto na
-  época), um patch na mesma leva estendeu pra sitewide; cor e texto
-  corrigidos na V1.17.3 (pedido: "o rodapé não será mais preto, ele
-  terá a cor aleatória que está reservada pro efeito cor" + "mude a cor
-  da fonte para preto"). Texto não precisa de regra própria nesta
-  classe — a regra base `footer` já é `color: var(--ink)`; a versão
-  clara (`--paper`) só existia pra contrastar contra o preto de antes.
-  Borda removida de vez na V1.17.4 ("tire a borda preta do box do
-  rodapé. SEM BORDA") — a regra base `footer` não tem mais `border-top`
-  nenhum, pra nenhuma variante.
+- **Fundo preto, texto `--hue` (V1.6, cor no fundo desde a V1.17.3,
+  invertida pra cor no texto na V1.17.5)**: `footer.footer-invertido {
+  background: var(--ink); color: var(--hue); }`, marcado direto no
+  HTML (`<footer class="footer-invertido">`) das 4 páginas do site que
+  têm rodapé (`projeto.html` não tem, ver acima). Nasceu escopado só à
+  página de projeto (item da reformulação da V1.6, fundo preto na
+  época), um patch na mesma leva estendeu pra sitewide; V1.17.3 trocou
+  o fundo pra `--hue` (texto preto); V1.17.5 inverteu de volta — "deixe
+  a barra do rodapé preto" + "a fonte deve ter a cor aleatória do
+  efeito cor" — fundo `--ink` de novo (como era desde a V1.6), texto
+  `--hue` (nunca tinha sido o texto antes). Borda removida de vez na
+  V1.17.4 ("tire a borda preta do box do rodapé. SEM BORDA") — a regra
+  base `footer` não tem mais `border-top` nenhum, pra nenhuma variante.
   `a { color: inherit }` (`base.css`) resolve o link do e-mail sozinho,
   sem seletor próprio. Diferente do efeito de painel (que liga/desliga
   `--hue` no `body` via `.is-overlay-open`), o rodapé usa `--hue`
   incondicionalmente — a variável já tem valor desde o carregamento da
   página (`js/hue.js` roda antes de qualquer painel), então o rodapé
-  aparece nessa cor o tempo todo, painel aberto ou não (ver seção 2,
+  aparece com essa cor o tempo todo, painel aberto ou não (ver seção 2,
   "Rodapé").
 
 **Layout e espaçamento:**
@@ -4255,3 +4262,35 @@ efeito de grão. é possível?)"
   nenhuma separando do conteúdo. Smoke test completo sem erro de
   console ou de rede genuíno além do ruído de terceiro já catalogado
   (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.17.5
+
+Pedido: "1. O Rodapé fica agora em 3 linhas: contato@vulpesfilmes.com
+© 2026 / São Paulo/SP, Brasil / Atendendo o mundo todo. 2. Aumente a
+fonte 2 pontos e coloque em bold. 3. Deixe a barra do rodapé preto.
+4. a fonte deve ter a cor aleatória do efeito COR."
+
+- **Três linhas, não duas** — `<p>São Paulo/SP - Brasil. Atendendo o
+  mundo todo.</p>` virou dois `<p>` (`São Paulo/SP, Brasil` /
+  `Atendendo o mundo todo`), nas 4 páginas com rodapé. Formato de
+  `São Paulo/SP, Brasil` já existia no site (`.contact-card__local`,
+  card de "contato") — reaproveitado aqui em vez de inventar uma
+  terceira grafia pro mesmo texto.
+- **Fonte: `14px` → `16px`.** `wght 700` já era o peso desde a V1.3 —
+  "coloque em bold" já estava satisfeito, não precisou mudar.
+- **Fundo e texto trocam de lugar de novo.** V1.17.3 tinha posto
+  `--hue` no fundo (texto preto); este pedido inverte — "deixe a barra
+  do rodapé preto" + "a fonte deve ter a cor aleatória do efeito cor":
+  `footer.footer-invertido { background: var(--ink); color: var(--hue); }`
+  (`css/base.css`). Fundo preto é o mesmo valor de antes da V1.17.3 (a
+  V1.6 original); a novidade é o TEXTO usar `--hue`, coisa que nunca
+  tinha acontecido — nem no preto original, nem na versão colorida da
+  V1.17.3 (lá o texto ficava preto, não colorido).
+- Verificado via Playwright: `background-color` computado do rodapé
+  confirmado `rgb(0,0,0)`; `color` computado confirmado idêntico ao
+  `--hue` do `<html>` na mesma carga de página; `font-size` confirmado
+  `16px`; os três parágrafos confirmados com o texto e a ordem
+  pedidos. Revisão visual por screenshot (sessão com `--hue` verde,
+  `#7BC96F`) — texto legível em cima do preto. Smoke test completo sem
+  erro de console ou de rede genuíno além do ruído de terceiro já
+  catalogado (Vimeo, em `global-renewable-alliance-cop30`).
