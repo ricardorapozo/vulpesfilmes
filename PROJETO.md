@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.11.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.14.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1175,18 +1175,24 @@ mais.
   galeria body { height:100%; overflow:hidden }` — mesmo princípio de
   `html.is-overlay-open { overflow:hidden }` (seção 2), travando a
   PÁGINA; quem se adapta é o vídeo, não o contrário.
-- **Vídeo enche o espaço**: `.projeto-corpo` vira `height:100vh;
+- **Vídeo enche o espaço disponível DENTRO da margem (V1.14 — era
+  full-bleed até então).** `.projeto-corpo` vira `height:100vh;
   display:flex; flex-direction:column`; `#conteudo-projeto` (== `.feed`,
   cujo `padding-top` já reserva a folga do chrome fixo) vira `flex:1;
   min-height:0` pra ocupar o resto da altura; `.projeto-video` também
-  `flex:1; min-height:0`, `padding-inline:0` (full-bleed, sem gutter
-  lateral — "só o player"); o `<iframe>`/`<video>` dentro ganha
+  `flex:1; min-height:0`, com `padding: var(--gutter)` nos quatro
+  lados (a V1.10 original tinha `padding-inline:0`, vídeo colado nas
+  bordas da janela — corrigido a partir de referência visual: "não
+  deixei o player do vídeo colado na janela. RESPEITE AS MARGENS", o
+  mesmo `var(--gutter)` já usado nas margens da galeria/vídeo com
+  galeria, seção 6 mais acima); o `<iframe>`/`<video>` dentro ganha
   `height:100%` e perde o `aspect-ratio:16/9` fixo (a proporção real do
-  vídeo passa a ser secundária ao espaço disponível na viewport —
-  pode letterboxar ou esticar levemente conforme a proporção original).
-  `min-height:0` em cada nível é o que permite um item flex encolher
-  abaixo do tamanho do próprio conteúdo — sem isso, o vídeo (com sua
-  altura intrínseca) empurraria a página pra fora da viewport de novo,
+  vídeo passa a ser secundária ao espaço retangular disponível — que já
+  não é mais edge-to-edge — pode letterboxar ou esticar levemente
+  conforme a proporção original). `min-height:0` em cada nível é o que
+  permite um item flex encolher abaixo do tamanho do próprio conteúdo
+  — sem isso, o vídeo (com sua altura intrínseca) empurraria a página
+  pra fora da viewport de novo,
   reintroduzindo a rolagem que essa variante existe pra evitar.
 - **Com galeria, essa parte não se aplica** — `is-projeto-sem-galeria`
   nunca entra, a página mantém rolagem normal e a galeria de fotos
@@ -1221,6 +1227,39 @@ visível** enquanto ele está aberto. Isso introduziu uma classe própria,
 modal de vídeo passou a usar a mesma classe e o mesmo tratamento de
 fundo, então os dois lightboxes do site hoje se comportam de forma
 idêntica nesse aspecto.
+
+**Margens e espaçamento da galeria corrigidos em dois patches seguidos
+(V1.12 e V1.13), a partir de referências marcadas à mão.** V1.12, dois
+problemas: "existe um espaço negativo bizarro entre o vídeo postado e
+as imagens da galeria" e "respeite a margem das fotos da galeria."
+Causa do primeiro: `.galeria-fotos` tinha `margin-top: var(--block-
+gap)` (72–160px) E o pai flex (`#conteudo-projeto`) tinha `gap:
+var(--block-gap)` entre os dois filhos — os dois se somavam, dobrando
+o espaço. Corrigido em dois lugares: `#conteudo-projeto` desceu o
+`gap` pra `var(--gutter)` (sem efeito quando não há galeria — um filho
+só, `gap` não faz nada); `.galeria-fotos` perdeu o `margin-top` próprio
+de vez, deixando só o `gap` do pai cuidar dessa folga. Causa do
+segundo: `.galeria-fotos` nunca tinha `padding-inline` — a grade ia de
+ponta a ponta da tela, sem a margem lateral que `.projeto-video`
+sempre teve (`padding-inline: var(--gutter)`). Adicionado o mesmo
+`padding-inline: var(--gutter)` em `.galeria-fotos`, igualando o
+respiro lateral das duas peças da página.
+
+**V1.13 corrigiu um efeito colateral do V1.10/V1.12: a foto colando na
+borda de baixo da janela no desktop.** "Não deixe a foto colar em
+baixo da janela. Adicione uma margem ao fim da pagina PROJETO." Causa:
+`#conteudo-projeto { padding-bottom: 0 }` (zerado incondicional desde
+a V1.10, pra não reabrir o vão antes da barra sticky no rodapé mobile)
+também zerava no DESKTOP — onde não existe barra nem rodapé "segurando"
+o fim da página, então a última foto ia direto até a borda da janela,
+sem respiro nenhum. Corrigido tornando o valor dependente do contexto:
+`padding-bottom: var(--gutter)` na regra base (desktop, com galeria);
+resetado pra `0` de novo em dois lugares mais específicos que
+continuam precisando do zero — `html.is-projeto-sem-galeria
+#conteudo-projeto` (vídeo enche a viewport inteira, nenhuma folga
+extra cabe) e dentro do `@media (max-width:820px)` geral (a barra
+sticky no rodapé mobile já cumpre esse papel; somar as duas reabriria
+o vão que a V1.10 tinha corrigido).
 
 **Vídeo com som, de propósito (patch — revertendo uma decisão
 anterior).** A V1.6 original tinha deixado o vídeo mudo, por uma leitura
@@ -3691,3 +3730,94 @@ estranho entre as imagens e a barra título. Corrija isso."
   confirmar direto no YouTube. Smoke test completo sem erro de console
   ou de rede genuíno além do ruído de terceiro já catalogado (Vimeo,
   YouTube `compute-pressure`).
+
+### 1.12
+
+Patch, com referência marcada à mão: "1. nas páginas PROJETO que
+contém galerias, existe um espaço negativo bizarro entre o vídeo
+postado e as imagens da galeria. 2. Respeite a margem das fotos da
+galeria nas paginas PROJETO. Cofira a ref, eu tracei as margens."
+
+- **Espaço "bizarro" entre vídeo e galeria: causa raiz era dupla
+  contagem de espaçamento.** `.galeria-fotos` tinha `margin-top:
+  var(--block-gap)` (72–160px) — E o pai flex (`#conteudo-projeto`)
+  tinha `gap: var(--block-gap)` entre os dois filhos (`.projeto-video`
+  e `.galeria-fotos`) — os dois somavam, dobrando o espaço. Corrigido
+  descendo o `gap` do pai pra `var(--gutter)` e removendo o `margin-
+  top` próprio da galeria de vez (o `gap` do pai já cobre essa folga
+  sozinho). Sem efeito na variante sem galeria (só um filho, `gap` não
+  faz nada entre um item e ele mesmo).
+- **Margem lateral da galeria: `.galeria-fotos` nunca tinha tido
+  `padding-inline`.** A grade ia de ponta a ponta da tela — diferente
+  de `.projeto-video`, que sempre teve `padding-inline: var(--gutter)`.
+  Adicionado o mesmo `padding-inline: var(--gutter)`, igualando o
+  respiro lateral das duas peças.
+- Verificado via Playwright: gap entre vídeo e galeria confirmado em
+  `44px` (exatamente `--gutter` no viewport testado, era ~152px antes
+  — a soma dupla); margens laterais da galeria confirmadas simétricas
+  (`44px`/`44px` em desktop 1600px, `18px`/`18px` em mobile 390px,
+  batendo com `.projeto-video` nos dois casos). Screenshot revisado
+  visualmente (desktop, full-page) contra a referência enviada. Smoke
+  test completo sem erro de console ou de rede genuíno além do ruído
+  de terceiro já catalogado (Vimeo).
+
+### 1.13
+
+Patch, com duas referências (uma marcada com X vermelho sobre o estado
+errado, outra mostrando o certo): "1. Não deixe a foto colar em baixo
+da janela. Adicione uma margem ao fim da pagina PROJETO. A foto com as
+duas linhas vermelhas cruzadas está errado, a outra imagem é a ref que
+vc deve seguir."
+
+- **`#conteudo-projeto { padding-bottom: 0 }` (zerado incondicional
+  desde a V1.10) passou a depender do contexto.** O zero fazia sentido
+  só pra dois casos — sem galeria (vídeo enche a viewport, nenhuma
+  folga extra cabe) e no rodapé mobile (a barra sticky já seguraria o
+  fim da página) — mas também zerava no DESKTOP com galeria, onde não
+  existe barra nem rodapé segurando o final: a última foto ia direto
+  até a borda da janela.
+- **Regra base volta a ter `padding-bottom: var(--gutter)`** (era `0`)
+  — o caso padrão agora é ter uma margem real no fim da página. Os
+  dois casos que precisam de zero ficaram explícitos, cada um na sua
+  regra mais específica: `html.is-projeto-sem-galeria #conteudo-
+  projeto` (ganhou `padding-bottom: 0` que não tinha antes) e dentro
+  do `@media (max-width:820px)` geral (nova regra `#conteudo-projeto {
+  padding-bottom: 0 }`, pro caso com galeria no mobile).
+- Verificado via Playwright: margem no fim da página confirmada em
+  `~44px` (desktop, `1600px`, batendo com `--gutter` nesse viewport) —
+  era `0px` antes (foto colada na borda); gap entre a última foto e a
+  barra no rodapé mobile confirmado continuando em `~0px` (não
+  reabriu); variante sem galeria confirmada continuando sem rolagem
+  nenhuma (`scrollHeight === innerHeight`). Screenshot revisado
+  visualmente contra a referência "certa" enviada. Smoke test completo
+  sem erro de console ou de rede genuíno além do ruído de terceiro já
+  catalogado (Vimeo).
+- **Bônus, achado revisando a documentação**: um parágrafo da seção 6
+  ("Modal de vídeo") tinha ficado partido ao meio por um patch
+  anterior (V1.12) — a frase "...o modal de vídeo passou a usar a
+  mesma classe e o mesmo tratamento de" continuava só depois de outro
+  parágrafo inteiro no meio. Corrigido — sem relação com o CSS deste
+  patch, só limpeza da documentação.
+
+### 1.14
+
+Patch, com duas referências (uma marcada com X vermelho sobre o estado
+errado): "nas paginas PROJETO SEM GALERIA, não deixei o player do
+vídeo colado na janela. RESPEITE AS MARGENS. Ver ref."
+
+- **`.projeto-video` (variante sem galeria) ganha `padding:
+  var(--gutter)` nos quatro lados — era `padding-inline: 0`
+  (full-bleed) desde a V1.10.** O vídeo continua ocupando o espaço que
+  sobra na viewport (sem rolagem, mesmo princípio de sempre), só que
+  agora dentro de uma margem — igual à mesma margem que a galeria e o
+  vídeo COM galeria já usam (`var(--gutter)`), em vez de colado nas
+  quatro bordas da janela.
+- Verificado via Playwright: margens confirmadas simétricas nos quatro
+  lados (desktop 1600px: 44px/44px horizontal, 44px vertical; mobile
+  390px: 18px/18px horizontal) em dois projetos sem galeria (YouTube e
+  o layout geral, mesmo mecanismo vale pra Vimeo por não depender do
+  provedor); `scrollHeight === innerHeight` confirmado continuando
+  (zero rolagem, não regrediu). Screenshots revisados visualmente
+  (desktop e mobile) contra a referência "certa" enviada. Smoke test
+  completo sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo).

@@ -627,14 +627,35 @@ html.is-overlay-open .galeria-fotos__item::after {
 /* `#conteudo-projeto` (`.feed`) reserva `padding-bottom: var(--block-
    gap)` (72–160px) por padrão — folga pensada pra separar o conteúdo
    do rodapé que vinha em seguida. V1.10 removeu o `<footer>` desta
-   página; a folga ficou órfã e virou um vão vazio entre a última foto
-   da galeria e a barra de título no rodapé mobile — "deixou um espaço
-   estranho entre as imagens e a barra título. Corrija isso." Zerado
-   aqui, incondicional (as duas variantes perderam o rodapé): a barra
-   `position:sticky` (mobile, abaixo) já resolve sozinha não sobrepor a
-   última foto, não precisa de padding reservando espaço pra ela. */
+   página e zerou esse `padding-bottom` de vez, incondicional — bom
+   pro rodapé mobile (a barra `position:sticky` já resolve sozinha não
+   sobrepor a última foto ali, ver `@media (max-width:820px)` abaixo),
+   mas ruim pro DESKTOP: sem rodapé nem barra grudada embaixo pra
+   "segurar" o fim da página, a foto da galeria colava direto na borda
+   da janela — "Não deixe a foto colar em baixo da janela. Adicione uma
+   margem ao fim da pagina PROJETO" (V1.13, com referência visual).
+   Corrigido descendo (não zerando) pra `var(--gutter)`: a mesma folga
+   já usada nas laterais da galeria e entre ela e o vídeo, mantendo o
+   respiro consistente nos quatro lados. No mobile, a regra volta a
+   zerar (abaixo) — lá a barra sticky no rodapé já cumpre esse papel;
+   somar as duas reabriria o "espaço estranho" que a V1.10 corrigiu.
+   Sem galeria, `padding-bottom` é resetado pra `0` de novo (ver
+   `is-projeto-sem-galeria` abaixo) — o vídeo preenche a viewport
+   inteira, nenhuma folga extra cabe ali.
+
+   `gap` também reduzido de `var(--block-gap)` (72–160px, o espaçamento
+   entre BLOCOS inteiros da home — `.feed` é a mesma classe usada lá)
+   pra `var(--gutter)` (V1.12): `.projeto-video` e `.galeria-fotos` são
+   os dois únicos filhos diretos de `#conteudo-projeto` quando há
+   galeria, e esse `gap` do flex somava com a folga própria de cada
+   um, dobrando o espaço — achado junto com o `margin-top` de
+   `.galeria-fotos` abaixo (mesmo pedido: "espaço negativo bizarro
+   entre o vídeo... e as imagens da galeria"). Sem efeito quando não
+   há galeria (só um filho, `gap` não faz nada entre um item e ele
+   mesmo). */
 #conteudo-projeto {
-  padding-bottom: 0;
+  padding-bottom: var(--gutter);
+  gap: var(--gutter);
 }
 
 /* Sem margin-top próprio: `.projeto-video` é o primeiro filho que conta
@@ -683,19 +704,24 @@ html.is-projeto-sem-galeria .projeto-corpo {
 html.is-projeto-sem-galeria #conteudo-projeto {
   flex: 1;
   min-height: 0;
+  padding-bottom: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* Vídeo enche o espaço inteiro: sem gutter lateral (full-bleed — "só o
-   player"), `aspect-ratio` fixo de 16:9 sai de cena (senão a largura
-   ditaria a altura e sobraria ou faltaria espaço vertical); a
-   proporção real de cada vídeo passa a ser secundária à viewport
-   disponível. */
+/* Vídeo enche o espaço disponível dentro da margem — V1.10 tinha feito
+   isso full-bleed (`padding-inline: 0`, vídeo colado nas bordas da
+   janela); V1.14 corrigiu com referência visual: "não deixei o player
+   do vídeo colado na janela. RESPEITE AS MARGENS." `padding` agora nos
+   quatro lados (`var(--gutter)`, mesmo valor usado nas margens da
+   galeria e do vídeo COM galeria) — o vídeo continua enchendo o que
+   sobra depois da margem, não a viewport inteira; `aspect-ratio: auto`
+   continua fora de cena (a proporção real do vídeo é secundária ao
+   espaço retangular disponível, que já não é mais edge-to-edge). */
 html.is-projeto-sem-galeria .projeto-video {
   flex: 1;
   min-height: 0;
-  padding-inline: 0;
+  padding: var(--gutter);
 }
 
 html.is-projeto-sem-galeria .projeto-video iframe,
@@ -731,12 +757,25 @@ html.is-projeto-sem-galeria .projeto-video video {
    horizontais/verticais — é a "máscara" pedida: `object-fit: cover`
    recorta cada imagem pro formato da célula, venha ela do tamanho que
    vier. */
+/* PATCH: dois problemas achados numa referência marcada à mão — "existe
+   um espaço negativo bizarro entre o vídeo postado e as imagens da
+   galeria" e "respeite a margem das fotos da galeria". Sem `margin-top`
+   próprio: a folga entre `.projeto-video` e `.galeria-fotos` já vem do
+   `gap: var(--gutter)` do flex pai (`#conteudo-projeto`, ver acima) —
+   um `margin-top` aqui SOMARIA com esse `gap` em vez de substituí-lo
+   (foi exatamente isso que causou o espaço "bizarro": o `margin-top`
+   de antes, `var(--block-gap)`, se empilhava com o `gap` do pai,
+   também `var(--block-gap)` na época). `padding-inline` nunca tinha
+   existido aqui — sem isso, a galeria ia de ponta a ponta da tela, sem
+   a margem lateral que o vídeo (`.projeto-video { padding-inline:
+   var(--gutter) }`, mais acima) sempre teve; agora as duas peças da
+   página respeitam o mesmo respiro nas laterais. */
 .galeria-fotos {
   display: grid;
   grid-template-columns: 2fr 1fr;
   align-items: stretch;
   gap: var(--gutter);
-  margin-top: var(--block-gap);
+  padding-inline: var(--gutter);
 }
 
 .galeria-fotos__item { overflow: hidden; }
@@ -869,6 +908,17 @@ html.is-projeto-sem-galeria .projeto-video video {
     width: 100%;
     background: var(--paper);
     padding: 10px var(--gutter);
+  }
+
+  /* `padding-bottom` de `#conteudo-projeto` volta a `0` aqui — no
+     mobile, a barra sticky logo acima já cumpre o papel de "margem no
+     fim da página" (ela é o fim visível da página). O `var(--gutter)`
+     do desktop (regra base, mais acima) é só pra quando NÃO existe
+     barra grudada no rodapé segurando o final — no mobile ela sempre
+     existe, somar as duas reabriria o "espaço estranho" que a V1.10 já
+     tinha corrigido uma vez. */
+  #conteudo-projeto {
+    padding-bottom: 0;
   }
 }
 
