@@ -107,7 +107,13 @@
     var html = '<div class="projeto-video">' + videoHTML(p, nome) + '</div>';
 
     if (p.galeria && p.galeria.length) {
-      html += '<div class="galeria-fotos">';
+      /* `data-video` (V1.17): pedido explícito pra ler pelo
+         `js/photo-modal.js`, que monta o lightbox lendo o DOM (não
+         `projetos.json`) — sem isso, o script não teria como saber o
+         link do vídeo do projeto pra incluí-lo como o primeiro slide da
+         galeria. Vazio quando não há vídeo (`p.video` pode ser `""`);
+         `photo-modal.js` já ignora o atributo nesse caso. */
+      html += '<div class="galeria-fotos" data-video="' + escapar(p.video || '') + '">';
       p.galeria.forEach(function (foto, i) {
         var alt = foto.alt || (nome + ', foto ' + (i + 1));
         html += '<div class="galeria-fotos__item"><img src="' + escapar(foto.src) + '" alt="' + escapar(alt) + '" loading="lazy"></div>';

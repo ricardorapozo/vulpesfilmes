@@ -7,29 +7,82 @@
 
    Lê a lista de fotos direto do DOM (todas as <img> dentro da mesma
    .galeria-fotos clicada), não de projetos.json — funciona pra qualquer
-   grade de fotos que exista na página, sem acoplar ao formato do dado. */
+   grade de fotos que exista na página, sem acoplar ao formato do dado.
+
+   V1.17: o vídeo do projeto vira o PRIMEIRO slide da galeria — "o
+   usuário clica em uma foto, o vídeo (que tocava em autoplay) para, abre
+   a galeria, e uma das fotos é o vídeo." `slides` deixou de ser só
+   `{src, alt}`; agora cada item tem `tipo: 'foto'` ou `'video'`, e
+   `mostrar()` decide o que fazer com cada um. O link do vídeo vem de
+   `data-video` em `.galeria-fotos` (escrito por `js/projeto.js` — esse
+   script lê o DOM, não `projetos.json`, então precisa que o dado chegue
+   até ele por HTML). */
 (function () {
   var modal = document.getElementById('photo-modal');
   if (!modal) return;
 
   var imgEl = modal.querySelector('.photo-modal__img');
+  var videoEl = modal.querySelector('.photo-modal__video');
   var fechar = modal.querySelector('.photo-modal__close');
   var prev = modal.querySelector('.arrow--prev');
   var next = modal.querySelector('.arrow--next');
+  var escapar = window.VulpesHelpers.escapar;
+  var urlDeEmbed = window.VulpesHelpers.urlDeEmbed;
 
   var fotos = [];
   var indice = 0;
   var gatilho = null;
 
+  /* "Ele pode voltar parado" — o vídeo entra como slide, mas não toca
+     sozinho: `urlDeEmbed(url, false)` monta o embed SEM `autoplay=1`. */
   function mostrar(i) {
     indice = (i + fotos.length) % fotos.length;
-    imgEl.src = fotos[indice].src;
-    imgEl.alt = fotos[indice].alt;
+    var slide = fotos[indice];
+
+    if (slide.tipo === 'video') {
+      imgEl.hidden = true;
+      imgEl.src = '';
+      videoEl.hidden = false;
+      var embed = urlDeEmbed(slide.url, false);
+      videoEl.innerHTML = embed
+        ? '<iframe src="' + escapar(embed) + '" title="Vídeo do projeto" ' +
+          'allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>'
+        : '<video src="' + escapar(slide.url) + '" controls playsinline></video>';
+      return;
+    }
+
+    videoEl.hidden = true;
+    videoEl.innerHTML = '';
+    imgEl.hidden = false;
+    imgEl.src = slide.src;
+    imgEl.alt = slide.alt;
+  }
+
+  /* Pausa o vídeo de verdade da página (que toca em autoplay fora do
+     lightbox, ver js/projeto.js) ao abrir a galeria — senão ele continua
+     tocando (e fazendo som) escondido atrás do fundo branco do lightbox.
+     Três casos, conforme o que `.projeto-video` estiver mostrando:
+     `<video>` local (`.pause()` direto), iframe do YouTube ou do Vimeo
+     (cada um com sua própria API de `postMessage` — não dá pra chamar
+     `.pause()` num iframe de outro domínio). `enablejsapi=1` no embed do
+     YouTube (ver js/helpers.js) é o que garante esse comando ser aceito. */
+  function pausarVideoPrincipal() {
+    var video = document.querySelector('.projeto-video video');
+    if (video) { video.pause(); return; }
+    var iframe = document.querySelector('.projeto-video iframe');
+    if (!iframe || !iframe.contentWindow) return;
+    var src = iframe.src || '';
+    if (src.indexOf('youtube.com') !== -1) {
+      iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+    } else if (src.indexOf('vimeo.com') !== -1) {
+      iframe.contentWindow.postMessage(JSON.stringify({ method: 'pause' }), '*');
+    }
   }
 
   function abrir(lista, i, origem) {
     fotos = lista;
     gatilho = origem;
+    pausarVideoPrincipal();
     mostrar(i);
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
@@ -50,6 +103,7 @@
     modal.inert = true;
     document.documentElement.classList.remove('is-photo-open');
     imgEl.src = '';
+    videoEl.innerHTML = ''; /* remove o player do slide, se era esse o slide aberto */
     if (gatilho) gatilho.focus();
     gatilho = null;
   }
@@ -59,8 +113,14 @@
     if (item) {
       var galeria = item.closest('.galeria-fotos');
       var imgs = Array.prototype.slice.call(galeria.querySelectorAll('img'));
-      var lista = imgs.map(function (im) { return { src: im.currentSrc || im.src, alt: im.alt }; });
-      abrir(lista, imgs.indexOf(item), item);
+      var lista = imgs.map(function (im) { return { tipo: 'foto', src: im.currentSrc || im.src, alt: im.alt }; });
+      var videoUrl = galeria.getAttribute('data-video');
+      var deslocamento = 0;
+      if (videoUrl) {
+        lista.unshift({ tipo: 'video', url: videoUrl });
+        deslocamento = 1; /* o vídeo entrou na frente — os índices das fotos andam um pra direita */
+      }
+      abrir(lista, imgs.indexOf(item) + deslocamento, item);
       return;
     }
 

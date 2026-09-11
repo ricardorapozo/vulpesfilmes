@@ -611,6 +611,25 @@ html.is-photo-open .projeto-voltar { display: none; }
   cursor: pointer;
 }
 
+/* V1.17: o vídeo do projeto vira o primeiro "slide" do lightbox de
+   fotos (ver js/photo-modal.js) — `[hidden]` por padrão, trocado de
+   lugar com `.photo-modal__img` conforme o slide atual. Largura cheia
+   do frame (ao contrário da foto, que centraliza no tamanho natural
+   dela) com `aspect-ratio: 16/9` — o mesmo tratamento que
+   `.projeto-video iframe/video` já usa fora do lightbox. */
+.photo-modal__video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.photo-modal__video iframe,
+.photo-modal__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .photo-modal__frame .arrow { position: absolute; }
 .photo-modal__frame .arrow--prev { left: -50px; }
 .photo-modal__frame .arrow--next { right: -50px; }

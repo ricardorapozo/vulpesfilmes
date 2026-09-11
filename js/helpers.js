@@ -25,15 +25,27 @@
   /* V1.6: movido de js/video-modal.js pra cá — o player inline da própria
      página de projeto (js/projeto.js) precisa da mesma conversão de URL
      pra embed, e duplicar a regex em dois arquivos era um convite a
-     desalinhar um do outro depois. Retorna a URL de embed (YouTube/Vimeo,
-     já com autoplay) ou null se for um mp4 local — nesse caso quem chama
-     monta uma <video> em vez de <iframe>. */
-  function urlDeEmbed(url) {
+     desalinhar um do outro depois. Retorna a URL de embed (YouTube/Vimeo)
+     ou null se for um mp4 local — nesse caso quem chama monta uma <video>
+     em vez de <iframe>.
+
+     `autoplay` (V1.17, padrão `true` — todo chamador existente continua
+     pedindo autoplay sem precisar passar o segundo argumento) fica
+     `false` só pro slide de vídeo dentro do lightbox de fotos
+     (js/photo-modal.js): "ele pode voltar parado" — o vídeo entra como
+     mais um slide da galeria, mas não deve tocar sozinho ao ser exibido
+     ali. `enablejsapi=1` no embed do YouTube é o que permite pausar via
+     `postMessage` de fora do iframe (ver js/photo-modal.js,
+     `pausarVideoPrincipal()`) — sem isso, o comando de pause às vezes é
+     ignorado pelo player. */
+  function urlDeEmbed(url, autoplay) {
+    var comSom = autoplay === false ? '' : '&autoplay=1';
+
     var yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/);
-    if (yt) return 'https://www.youtube.com/embed/' + yt[1] + '?autoplay=1&rel=0';
+    if (yt) return 'https://www.youtube.com/embed/' + yt[1] + '?rel=0&enablejsapi=1' + comSom;
 
     var vimeo = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeo) return 'https://player.vimeo.com/video/' + vimeo[1] + '?autoplay=1';
+    if (vimeo) return 'https://player.vimeo.com/video/' + vimeo[1] + '?' + (autoplay === false ? '' : 'autoplay=1');
 
     return null;
   }

@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.16.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.17.1.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -933,6 +933,20 @@ vem de graça do `gap` do `.feed` (flex column), que só conta espaço
 entre irmãos visíveis — a aba escondida (`hidden`) não participa do
 flex, então o gap aparece certinho entre a aba aberta e o link.
 
+**Esse `gap` (e o `padding-bottom`) do `.feed` foram reduzidos nesta
+página** (V17.1): `.feed` sozinho usa `var(--block-gap)` (72–160px,
+pensado pra separar BLOCOS inteiros na home, poucos e grandes). Na
+página de diretor, esse mesmo valor virava o espaço entre o cabeçalho
+de abas e o conteúdo, entre o conteúdo e o "voltar", e entre o "voltar"
+e o rodapé — grande demais pra elementos desse porte, mesma causa-raiz
+já corrigida entre vídeo e galeria em `projeto.html` (V1.12/V1.13, ver
+seção 12). `.feed[data-diretor-page] { gap/padding-bottom: var(
+--gutter) }` (`css/layout.css`) reduz os três pra ~44px (desktop) sem
+tocar a home (que usa `.feed` sem esse atributo) nem `#conteudo-projeto`
+(seletor por ID, independente). O gap ENTRE projetos dentro da aba
+"trabalhos" (`.galeria`, gap próprio) não muda — é ritmo interno da
+lista, não a moldura da página.
+
 **A galeria de trabalhos é derivada por filtro** — nunca uma segunda
 lista escrita à mão. O campo `diretor` em cada projeto contém o slug do
 diretor responsável. Implementado em V6, em `js/feed.js`: a mesma função
@@ -1264,6 +1278,63 @@ essa regra foi escrita. Resultado: abrir a galeria de fotos em
 `projeto.html` sobrepunha "voltar" e "fechar" no mesmo canto, os dois
 ilegíveis. Corrigido incluindo `.projeto-voltar` na mesma regra —
 mesmo motivo, mesma solução já usada pro burger.
+
+**O vídeo do projeto vira o PRIMEIRO slide do lightbox de fotos
+(V1.17).** Pedido: "o usuário entra na página PROJETO e o vídeo está em
+autoplay, ele clica em uma foto da galeria. O VIDEO PARA e abre-se a
+galeria. O usuário rola as fotos e uma delas é o VÍDEO. (O vídeo é a
+primeira imagem dessa galeria)." Confirmado depois: "ele pode voltar
+parado" (não precisa recomeçar a tocar sozinho ao ser revisitado
+dentro do lightbox).
+
+- **`js/projeto.js` escreve `data-video="<url>"` em `.galeria-fotos`**
+  ao montar a página — `js/photo-modal.js` lê a lista de fotos direto
+  do DOM (não de `projetos.json`, ver início da seção), então precisa
+  que o link do vídeo chegue até ele por HTML, não por dado
+  compartilhado em JS.
+- **Slides deixam de ser só `{src, alt}`** — cada item da lista agora
+  tem `tipo: 'foto'` ou `'video'`. Ao clicar numa foto da grade, a
+  lista final é montada com o vídeo (se `data-video` existir e não
+  estiver vazio) na frente de todas as fotos — por isso o índice da
+  foto clicada precisa de `+1` (`deslocamento`) em relação à posição
+  dela na própria grade, já que o slide 0 passou a ser o vídeo.
+- **`mostrar(i)` decide o que fazer conforme o `tipo` do slide**: foto
+  mostra/esconde `.photo-modal__img` (como sempre); vídeo mostra/esconde
+  `.photo-modal__video` (elemento novo, `hidden` por padrão) e monta um
+  `<iframe>` (YouTube/Vimeo) ou `<video>` (mp4 local) dentro dele — os
+  dois elementos nunca ficam visíveis ao mesmo tempo.
+- **"Ele pode voltar parado": `urlDeEmbed(url, false)`** — `autoplay`
+  virou o segundo parâmetro dessa função (`js/helpers.js`, opcional,
+  `true` por padrão — os dois chamadores antigos, `js/projeto.js` e
+  `js/video-modal.js`, continuam pedindo autoplay sem precisar passar
+  esse argumento). Passando `false`, a URL de embed sai sem
+  `autoplay=1` — o slide de vídeo dentro do lightbox sempre abre
+  parado (frame estático, sem controles tocando sozinho), confirmado
+  via Playwright comparando dois screenshots do mesmo slide com alguns
+  segundos de intervalo: pixel a pixel idênticos.
+- **O vídeo de VERDADE da página (o que toca em autoplay fora do
+  lightbox) pausa ao abrir a galeria — `pausarVideoPrincipal()`,
+  `js/photo-modal.js`.** Três casos, conforme o que `.projeto-video`
+  estiver mostrando: `<video>` local, `.pause()` direto; iframe do
+  YouTube, `postMessage({event:'command', func:'pauseVideo', args:[]})`;
+  iframe do Vimeo, `postMessage({method:'pause'})` — cada plataforma
+  tem sua própria API de postMessage, não dá pra chamar `.pause()` num
+  iframe de outro domínio diretamente. **`enablejsapi=1` acrescentado
+  ao embed do YouTube** (`js/helpers.js`, em TODO embed do YouTube, não
+  só no do lightbox) — sem esse parâmetro na URL, o player às vezes
+  ignora comandos de `postMessage` vindos de fora.
+- Verificado via Playwright: `data-video` confirmado presente e correto
+  em dois projetos com galeria (`cbcc-2026`, `dancebook-brasil`); clicar
+  na 1ª foto da grade abre no slide correto (índice deslocado por causa
+  do vídeo na frente); navegar pra trás até o slide 0 mostra o
+  `<iframe>` sem `autoplay=1` na URL; `enablejsapi=1` confirmado no
+  iframe do vídeo PRINCIPAL (pré-requisito real pro `pausarVideoPrincipal
+  ()` funcionar num navegador de verdade — o `postMessage` em si não dá
+  pra verificar de fora por restrição de segurança cross-origin, mas o
+  parâmetro que o habilita foi confirmado presente). Testado em desktop
+  e mobile. Zero erros de console/JS. Smoke test completo sem erro de
+  console ou de rede genuíno além do ruído de terceiro já catalogado
+  (Vimeo).
 
 **Margens e espaçamento da galeria corrigidos em dois patches seguidos
 (V1.12 e V1.13), a partir de referências marcadas à mão.** V1.12, dois
@@ -3909,3 +3980,71 @@ anterior retorna."
   visível com o lightbox aberto). Zero erros de console. Smoke test
   completo sem erro de console ou de rede genuíno além do ruído de
   terceiro já catalogado (Vimeo).
+
+### 1.17
+
+Pedido, em duas mensagens (pergunta de viabilidade, depois confirmação
+de um detalhe de comportamento): "o vídeo está em autoplay, ele clica
+em uma foto da galeria. o VIDEO PARA e abre-se a galeria. O usuário
+rola as fotos e uma delas é o VÍDEO... É possível fazer isso?" —
+"Ele pode voltar parado."
+
+- **Vídeo do projeto vira o primeiro slide do lightbox de fotos.**
+  `js/projeto.js` escreve `data-video` em `.galeria-fotos`;
+  `js/photo-modal.js` prepend um slide `{tipo:'video', url}` na lista
+  antes de abrir, deslocando o índice das fotos em `+1`. `mostrar(i)`
+  agora decide entre mostrar `.photo-modal__img` ou o `.photo-modal__
+  video` (elemento novo), montando um `<iframe>`/`<video>` conforme o
+  tipo do slide.
+- **`urlDeEmbed(url, autoplay)` ganha segundo parâmetro** (`js/helpers.
+  js`, padrão `true` — chamadores antigos não mudam nada). O slide de
+  vídeo do lightbox chama com `false`: "ele pode voltar parado" — abre
+  sempre sem `autoplay=1` na URL.
+- **`pausarVideoPrincipal()` pausa o vídeo de verdade da página ao
+  abrir a galeria** — `<video>` local via `.pause()`; iframe do
+  YouTube/Vimeo via `postMessage` (cada plataforma com sua própria API).
+  `enablejsapi=1` acrescentado a todo embed do YouTube (não só o do
+  lightbox) — necessário pro comando de pause ser aceito.
+- Verificado via Playwright: índices corretos ao abrir em duas fotos
+  diferentes (`cbcc-2026`, `dancebook-brasil`); slide de vídeo
+  confirmado sem `autoplay=1` na URL e, mais rigorosamente, dois
+  screenshots do mesmo slide com alguns segundos de intervalo
+  confirmados pixel a pixel IDÊNTICOS (vídeo de fato parado, não só a
+  URL sem o parâmetro); `enablejsapi=1` confirmado no embed do vídeo
+  principal. Testado em desktop e mobile. Zero erros de console/JS.
+  Smoke test completo sem erro de console ou de rede genuíno além do
+  ruído de terceiro já catalogado (Vimeo).
+
+### 1.17.1
+
+Pedido: "na pagina DIRETORES, ajuste a margem entre as subsessões
+'PROJETOS / BIO' e a foto bio e os trabalhos. O mesmo ajuste feito nas
+galerias. Ajuste também as margens inferiores" — mesma classe de bug já
+corrigida em `projeto.html` nas V1.12/V1.13/V1.15: `.feed` reserva
+`gap`/`padding-bottom: var(--block-gap)` (72–160px) pra separar blocos
+inteiros na home, mas a página de diretor usa a mesma classe pro
+cabeçalho de abas, o conteúdo e o link "voltar" — elementos bem menores,
+que não precisam desse respiro todo.
+
+- **Medido antes da correção (Playwright, 1600×900):** cabeçalho→
+  conteúdo, conteúdo→"voltar" e "voltar"→rodapé, nas duas abas
+  (trabalhos e bio) e nas duas páginas de diretor — os seis gaps
+  uniformemente em 108px (`12vh` de `--block-gap` a 900px de altura),
+  todos vindo do `gap`/`padding-bottom` do `.feed`, sem nenhuma margem
+  própria de componente somando por cima (diferente do caso da V1.12:
+  `.galeria` e `.diretor-voltar` já tinham comentário confirmando que
+  não têm `margin-top` próprio).
+- **Fix:** `.feed[data-diretor-page] { gap: var(--gutter); padding-
+  bottom: var(--gutter); }` (`css/layout.css`), escopado pelo atributo
+  `data-diretor-page` que já existe em `ricardo-rapozo.html` e
+  `daniela-luquini.html` (usado por `js/feed.js` pra outro fim) —
+  reduz os três gaps sem afetar a home (`.feed` sem esse atributo) nem
+  `projeto.html` (seletor `#conteudo-projeto`, independente).
+- Verificado via Playwright: os seis gaps caíram de 108px pra 44px
+  (desktop, `var(--gutter)` a 1600px) e 18px (mobile, 390px) nas duas
+  páginas, nas duas abas — confirmado por medição de `getBoundingClientRect`
+  e revisão visual de screenshots. Gap interno de `.galeria` (entre
+  projetos da aba trabalhos) confirmado intocado — regra própria,
+  não afetada pelo seletor. Smoke test completo sem erro de console ou
+  de rede genuíno além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).

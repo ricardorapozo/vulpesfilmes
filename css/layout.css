@@ -352,6 +352,21 @@ html.is-overlay-open .galeria-fotos__item::after {
   text-align: center;
 }
 
+/* V17.1: nas páginas de diretor, `.feed` (`gap`/`padding-bottom: var(
+   --block-gap)`, 72–160px — pensado pra separar BLOCOS inteiros na home)
+   também é o espaçamento entre cabeçalho→conteúdo da aba, conteúdo→
+   .diretor-voltar e .diretor-voltar→rodapé. Ali dá certo (blocos grandes
+   e poucos); aqui, com o cabeçalho de abas e o link de voltar sendo
+   elementos pequenos, o mesmo valor cria uma margem "bizarra" — mesma
+   causa-raiz já corrigida entre vídeo e galeria em `projeto.html`
+   (V1.12/V1.13): reduzir pra `var(--gutter)`, escopado só a essa página
+   via `[data-diretor-page]` pra não afetar a home (que usa a mesma
+   classe `.feed`, sem esse atributo). */
+.feed[data-diretor-page] {
+  gap: var(--gutter);
+  padding-bottom: var(--gutter);
+}
+
 /* V16.1: grande e centralizado nas duas abas — sem variação de tamanho
    por aba. A referência visual tinha o nome grande em trabalhos e em
    bio; a leitura de que ficava menor em trabalhos estava errada. */
