@@ -539,30 +539,60 @@ html.is-overlay-open .galeria-fotos__item::after {
   transform-origin: left;
 }
 
-/* ---------- página de projeto: barra fixa + vídeo (V1.6) ----------
+/* ---------- página de projeto: LOGO — [Diretor]: [Título] — VOLTAR (V1.6, padrão único na V1.11) ----------
    Reformulação completa a partir de referência visual: a página deixou
    de ter título grande + mídia ambiente clicável (ver `js/projeto.js`
    pra todo o histórico do que existia antes). Agora são só duas peças:
-   esta barra fixa, centralizada, na mesma linha do logo/hambúrguer; e o
-   vídeo de verdade tocando direto abaixo.
+   esta barra fixa e o vídeo de verdade tocando direto abaixo.
+
+   V1.11 unifica as duas variantes da página (com e sem galeria) num só
+   padrão de topo, com referência visual marcada à mão: "TODAS as
+   paginas do PROJETO devem obedecer o seguinte padrão: LOGO [DIRETOR]
+   - [TITULO] VOLTAR (Menu Hamburger SOME)." Até aqui, só a variante
+   sem galeria (V1.10) tinha perdido o burger — a V1.11 estende isso
+   pras duas, e troca o link de volta de "fechar" (só sem galeria, um
+   canto) + "voltar" (só com galeria, sticky até o fim da rolagem) por
+   UM SÓ link "voltar", sempre fixo no canto superior direito, nas duas
+   variantes. `.burger`, `<nav id="menu">`, "quem somos" e "contato"
+   saíram do HTML de `projeto.html` de vez — sem burger, esses painéis
+   não tinham mais como abrir; `js/panel.js` (que gerenciava tudo isso)
+   também parou de ser carregado nessa página, já que ficaria só
+   assumindo elementos que não existem mais aqui (seria erro de JS, não
+   só código morto: `burger.addEventListener` sem `if` de guarda).
 
    Texto sem fundo (voltou atrás de um patch que tinha dado um fundo em
    formato de pílula — a pílula foi descartada; "erro meu", segundo o
    pedido que reverteu). Ela é HTML estático em `projeto.html`
    (`#projeto-barra`, fora de `<main>`) — `js/projeto.js` só preenche o
    `innerHTML`, a posição é toda CSS. Estar fora de `<main>`, como irmã
-   de `.projeto-voltar` dentro de `.projeto-corpo`, é o que permite o
-   comportamento mobile logo abaixo. */
+   de `<main>` dentro de `.projeto-corpo`, é o que permite o
+   comportamento mobile logo abaixo.
+
+   **Alinhamento vertical entre logo/barra/voltar (V1.11) — achado e
+   corrigido a partir da referência marcada à mão.** Os três são
+   `position:fixed` independentes, com fontes de tamanhos DIFERENTES
+   (`.logo` 21px, `.projeto-barra` um `clamp` de 11–15px, `.projeto-
+   voltar` 19px) — usar o mesmo `top` fixo nos três (como era antes)
+   alinha o TOPO da caixa de cada um, não o CENTRO vertical do texto, e
+   caixas de altura diferente com o mesmo topo ficam com centros
+   diferentes: exatamente o desalinhamento que a referência marcou.
+   Correção: `.logo` (`top:18px`, `font-size:21px`, `line-height:1`) é
+   o âncora — define a linha média em `18px + 21px/2 = 28.5px` do topo
+   da viewport. `.projeto-barra` e `.projeto-voltar` calculam o próprio
+   `top` a partir dessa mesma linha média, subtraindo METADE da altura
+   da própria caixa (`font-size × line-height`) — assim os três TEXTOS
+   ficam com o centro na mesma altura, não só o topo da caixa. */
 .projeto-barra {
+  --fs: clamp(11px, 1.3vw, 15px);
   position: fixed;
-  top: 18px;
+  top: calc(28.5px - (var(--fs) * 1.3) / 2);
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-chrome);
   max-width: min(60vw, 640px);
   font-family: 'Inter', sans-serif;
   font-weight: 300;
-  font-size: clamp(11px, 1.3vw, 15px);
+  font-size: var(--fs);
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
@@ -575,10 +605,43 @@ html.is-overlay-open .galeria-fotos__item::after {
   text-underline-offset: .14em;
 }
 
+/* Link único de volta — substitui tanto o antigo `.projeto-voltar`
+   (sticky até o fim da rolagem, só na variante com galeria) quanto o
+   `.projeto-fechar` (só na variante sem galeria, V1.10) — mesmo canto
+   fixo que o `.burger` ocupava antes de sumir de vez. `line-height:1`
+   explícito (sem isso, herdaria `1.5` do body, mudando a altura da
+   caixa e quebrando a conta de alinhamento acima: `28.5 - 19/2 =
+   19px`). */
+.projeto-voltar {
+  position: fixed;
+  top: 19px;
+  right: var(--gutter);
+  z-index: var(--z-chrome);
+  font-variation-settings: 'wdth' 175, 'wght' 600;
+  font-size: 19px;
+  line-height: 1;
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
+/* `#conteudo-projeto` (`.feed`) reserva `padding-bottom: var(--block-
+   gap)` (72–160px) por padrão — folga pensada pra separar o conteúdo
+   do rodapé que vinha em seguida. V1.10 removeu o `<footer>` desta
+   página; a folga ficou órfã e virou um vão vazio entre a última foto
+   da galeria e a barra de título no rodapé mobile — "deixou um espaço
+   estranho entre as imagens e a barra título. Corrija isso." Zerado
+   aqui, incondicional (as duas variantes perderam o rodapé): a barra
+   `position:sticky` (mobile, abaixo) já resolve sozinha não sobrepor a
+   última foto, não precisa de padding reservando espaço pra ela. */
+#conteudo-projeto {
+  padding-bottom: 0;
+}
+
 /* Sem margin-top próprio: `.projeto-video` é o primeiro filho que conta
-   (o outro, `.projeto-barra`, é `position:fixed`, fora do fluxo) dentro
-   de `<main class="feed">`, cujo `padding-top` (seção 4, "Estrutura da
-   home") já reserva a folga do chrome fixo. */
+   (os outros dois, `.projeto-barra` e `.projeto-voltar`, são
+   `position:fixed`, fora do fluxo) dentro de `<main class="feed">`,
+   cujo `padding-top` (seção 4, "Estrutura da home") já reserva a folga
+   do chrome fixo. */
 .projeto-video {
   padding-inline: var(--gutter);
 }
@@ -591,92 +654,15 @@ html.is-overlay-open .galeria-fotos__item::after {
   border: 0;
 }
 
-/* ---------- página de projeto: link de volta, fixo até o rodapé (V1.3) ----------
-   V1.2 tinha isso como um link em fluxo normal no fim da página. V1.3
-   pede algo diferente: canto inferior ESQUERDO, acompanhando a rolagem
-   (fixo), mas sem sobrepor o rodapé — "o limite desse botão é o
-   rodapé". Isso é o clássico truque de `position: sticky` sem JS
-   nenhum: o "alcance" de um elemento sticky é limitado pela caixa do
-   PAI dele, não da página inteira. `.projeto-corpo` (em `projeto.html`)
-   envolve só `<main>` + este link, terminando exatamente onde o
-   `<footer>` começa — então `.projeto-voltar` com `position: sticky;
-   bottom: 24px` flutua sobre o conteúdo enquanto rola, e para de
-   acompanhar assim que a rolagem passa do fim de `.projeto-corpo`,
-   nunca invadindo o rodapé. Não dá pra fazer isso com o elemento como
-   irmão direto do `<footer>` sem esse wrapper: o "alcance" de sticky
-   seria o `<body>` inteiro, e ele continuaria grudado por cima do
-   próprio rodapé.
-
-   `pointer-events: none` no `<p>` + `auto` só no `<a>`: como `<p>` é um
-   bloco, ele ocupa a largura toda mesmo com o texto alinhado à
-   esquerda — sem isso, a área vazia e transparente à direita do link
-   ficaria por cima da galeria de fotos quando "grudado", bloqueando
-   clique nela mesmo sem nada visível ali. */
-.projeto-voltar {
-  position: sticky;
-  bottom: 24px;
-  text-align: right;
-  padding-inline: var(--gutter);
-  margin-top: var(--block-gap);
-  pointer-events: none;
-}
-
-.projeto-voltar a {
-  pointer-events: auto;
-  position: relative;
-  font-variation-settings: 'wdth' 175, 'wght' 700;
-  font-size: clamp(16px, 1.4vw, 19px);
-}
-
-.projeto-voltar a::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; bottom: -.06em;
-  height: 3px;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: right;
-  transition: transform var(--t-text) var(--ease-out);
-}
-
-.projeto-voltar a:hover::after {
-  transform: scaleX(1);
-  transform-origin: left;
-}
-
 /* ---------- página de projeto sem galeria: "só o player" (V1.10) ----------
    Pedido explícito: "Quando ela NÃO TIVER GALERIA veremos apenas o
-   player do vídeo, sem rolagem da página... temos o botão 'fechar' no
-   canto superior direito ao invés do menu burguer... não temos
-   rodapé." `js/projeto.js` decide (`p.galeria` vazio ou não) e alterna
-   a classe `is-projeto-sem-galeria` no `<html>` — todo o resto abaixo
-   é reação a essa classe, sem JS adicional nenhum. Projeto COM
-   galeria mantém o esquema de sempre (rolagem normal, burger, galeria
-   abaixo do vídeo) — só perde o rodapé, item 6: "o rodapé só aparece
-   na página principal" (ver `<footer>` removido de `projeto.html`
-   direto no HTML, não depende dessa classe). */
-
-.projeto-fechar {
-  display: none;
-  position: fixed;
-  top: 18px;
-  right: var(--gutter);
-  z-index: var(--z-chrome);
-  font-variation-settings: 'wdth' 175, 'wght' 600;
-  font-size: 19px;
-  text-decoration: underline;
-  text-underline-offset: .14em;
-}
-
-html.is-projeto-sem-galeria .burger { display: none; }
-html.is-projeto-sem-galeria .projeto-fechar { display: inline-block; }
-html.is-projeto-sem-galeria .projeto-voltar { display: none; }
-
-/* Trava a rolagem da PÁGINA — o vídeo é que preenche o espaço
-   disponível, ele que se ajusta à viewport, não o contrário. Mesmo
-   princípio de `html.is-overlay-open { overflow: hidden }` (seção 2),
-   aplicado aqui por um motivo diferente (layout "só o player", não o
-   efeito de cor). */
+   player do vídeo, sem rolagem da página... não temos rodapé."
+   `js/projeto.js` decide (`p.galeria` vazio ou não) e alterna a classe
+   `is-projeto-sem-galeria` no `<html>` — todo o resto abaixo é reação
+   a essa classe, sem JS adicional nenhum. Projeto COM galeria mantém a
+   rolagem normal e a galeria abaixo do vídeo — o chrome fixo (logo,
+   barra, voltar) e a ausência de burger/rodapé são iguais nas duas
+   variantes desde a V1.11 (ver bloco acima). */
 html.is-projeto-sem-galeria,
 html.is-projeto-sem-galeria body {
   height: 100%;
@@ -697,7 +683,6 @@ html.is-projeto-sem-galeria .projeto-corpo {
 html.is-projeto-sem-galeria #conteudo-projeto {
   flex: 1;
   min-height: 0;
-  padding-bottom: 0;
   display: flex;
   flex-direction: column;
 }
@@ -717,33 +702,6 @@ html.is-projeto-sem-galeria .projeto-video iframe,
 html.is-projeto-sem-galeria .projeto-video video {
   height: 100%;
   aspect-ratio: auto;
-}
-
-@media (max-width: 820px) {
-  /* Sem isso, a versão sem galeria herdaria o truque mobile de
-     `.projeto-barra` virar faixa branca grudada no rodapé (regra
-     acima, fora deste bloco `is-projeto-sem-galeria`) — mas aqui não
-     há rodapé nem rolagem pra sustentar esse truque. Volta pro mesmo
-     tratamento fixo-no-topo do desktop — mas SEM centralizar na
-     viewport inteira: numa tela estreita, `left:50%` + `max-width:
-     60vw` colocava a caixa da barra por baixo do logo (`.logo` mede
-     ~125px, "vulpesfilmes" nesse tamanho de fonte; `.projeto-fechar`
-     ~60px, "fechar"). Em vez disso, ancora nas duas bordas —
-     `left`/`right` calculados a partir da largura de cada vizinho +
-     folga — deixando a barra confinada ao espaço real que sobra entre
-     os dois, com `text-overflow: ellipsis` cortando o que não couber. */
-  html.is-projeto-sem-galeria .projeto-barra {
-    position: fixed;
-    top: 18px;
-    bottom: auto;
-    left: calc(var(--gutter) + 125px + 12px);
-    right: calc(var(--gutter) + 60px + 12px);
-    transform: none;
-    max-width: none;
-    width: auto;
-    background: none;
-    padding: 0;
-  }
 }
 
 /* ---------- página de projeto (vídeo + galeria de fotos) ----------
@@ -879,13 +837,27 @@ html.is-projeto-sem-galeria .projeto-video video {
   .diretor-bio--destaque .diretor-bio__foto { width: 100%; }
   .diretor-bio--destaque .bio { font-size: clamp(22px, 6vw, 30px); }
 
-  /* PATCH: no mobile, `.projeto-barra` desce do topo pro rodapé — vira
-     uma faixa branca de largura total, fixa até o rodapé, mesmo truque
-     de `.projeto-voltar` (ver comentário lá embaixo): sticky, limitado
-     pela caixa de `.projeto-corpo`, que termina exatamente onde o
-     `<footer>` começa. Precisa ser irmã direta de `.projeto-corpo`
-     (não neta, dentro de `<main>`) pra esse alcance funcionar — por
-     isso a reestruturação em `projeto.html`/`js/projeto.js`. */
+  /* No mobile, `.projeto-barra` desce do topo pro rodapé — vira uma
+     faixa branca de largura total, "sticky" limitada pela caixa de
+     `.projeto-corpo` (que termina onde o `<main>` termina — desde a
+     V1.10 não sobra `<footer>` depois pra se preocupar em não
+     sobrepor). Precisa ser irmã direta de `.projeto-corpo` (não neta,
+     dentro de `<main>`) pra esse alcance funcionar — por isso a
+     reestruturação em `projeto.html`/`js/projeto.js`.
+
+     Vale pras DUAS variantes da página, sem condicional nenhuma (V1.11
+     — antes só valia pra com-galeria; sem galeria tinha um desvio
+     próprio, removido): sem galeria, `.projeto-corpo` é uma coluna
+     flex de `100vh` (ver bloco `is-projeto-sem-galeria` abaixo) e
+     `#projeto-barra` é o último item dela — `position:sticky` aí
+     dentro, sem nada rolando, só se comporta como `relative`: fica
+     parada na própria posição de flex-item, que já é o rodapé da
+     coluna, exatamente onde deveria estar.
+
+     `.projeto-voltar` NÃO precisa de ajuste de posição aqui — desde a
+     V1.11 ele é `position:fixed` no canto superior direito o tempo
+     todo, mobile e desktop, nunca pareado com a barra no rodapé (era
+     assim antes, quando os dois dividiam o rodapé). */
   .projeto-barra {
     position: sticky;
     top: auto;
@@ -897,14 +869,6 @@ html.is-projeto-sem-galeria .projeto-video video {
     width: 100%;
     background: var(--paper);
     padding: 10px var(--gutter);
-  }
-
-  /* `.projeto-voltar` sobe pra não ficar embaixo da faixa nova — as
-     duas são `position: sticky` independentes, então não se empilham
-     sozinhas; a distância é uma estimativa da altura da faixa (~46px)
-     mais a folga que ela já tinha (24px). */
-  .projeto-voltar {
-    bottom: 70px;
   }
 }
 

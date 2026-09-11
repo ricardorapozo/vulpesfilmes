@@ -30,57 +30,12 @@
 
 <a class="logo" href="./">vulpesfilmes</a>
 
-<button class="burger" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu">
-  <span></span><span></span><span></span>
-</button>
-
-<a class="projeto-fechar" href="./" aria-label="Fechar">fechar</a>
+<a class="projeto-voltar" href="./" aria-label="Voltar">voltar</a>
 
 <div class="projeto-corpo">
   <main id="conteudo-projeto" class="feed"></main>
   <p id="projeto-barra" class="projeto-barra"></p>
-  <p class="projeto-voltar"><a href="./">voltar</a></p>
 </div>
-
-<nav id="menu" class="panel panel--menu" aria-label="Navegação principal">
-  <ul>
-    <li><a href="./">Projetos</a></li>
-    <li>
-      <button class="menu-toggle" aria-expanded="false" aria-controls="submenu-diretores">Diretores</button>
-      <button class="submenu-back" type="button">voltar</button>
-      <ul id="submenu-diretores" class="submenu" hidden>
-        <li><a href="ricardo-rapozo.html">Ricardo Rapozo</a></li>
-        <li><a href="daniela-luquini.html">Daniela Luquini</a></li>
-      </ul>
-    </li>
-    <li><a href="#quem-somos" data-abre="quem-somos">Quem somos</a></li>
-    <li><a href="#contato" data-abre="contato">Contato</a></li>
-  </ul>
-  <p class="social">
-    <a href="#">instagram</a>
-  </p>
-</nav>
-
-<section id="quem-somos" class="panel panel--about" aria-label="Quem somos">
-  <button type="button" class="close close--x" data-fecha aria-label="Fechar">&times;</button>
-  <div class="about-content">
-    <div class="prose">
-      <p>A Vulpes é um pequeno bureau de soluções audiovisuais. Um lugar para pensar, criar e dar forma a ideias.</p>
-      <p>Trabalhamos onde estratégia encontra imagem: na direção, no roteiro, na edição, no motion e na pós-produção. Entramos no projeto conforme o que ele pede, juntando olhar criativo, repertório e precisão técnica para transformar uma boa ideia em algo que realmente mereça ser visto.</p>
-    </div>
-    <a class="about-content__logo-link" href="./" aria-label="Voltar para o portfólio">
-      <img class="about-content__logo" src="media/vulpesFilmes-LOGO-HORIZONTAL.png" alt="vulpesfilmes" width="1791" height="772">
-    </a>
-  </div>
-</section>
-
-<section id="contato" class="panel panel--contact" aria-label="Contato" role="dialog" aria-modal="true" aria-hidden="true">
-  <button type="button" class="close" data-fecha>fechar</button>
-  <div class="contact-card">
-    <p class="contact-card__local">São Paulo/SP, Brasil</p>
-    <p class="contact-card__item"><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a></p>
-  </div>
-</section>
 
 <div id="photo-modal" class="photo-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Foto da galeria" inert>
   <button type="button" class="photo-modal__close">fechar</button>
@@ -95,7 +50,6 @@
 <script src="js/no-download.js"></script>
 <script src="js/diretores.js"></script>
 <script src="js/projetos.js"></script>
-<script src="js/panel.js"></script>
 <script src="js/idle-color.js"></script>
 <script src="js/projeto.js"></script>
 <script src="js/photo-modal.js"></script>

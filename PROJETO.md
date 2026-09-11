@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.10.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.11.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -651,6 +651,15 @@ Fica acima do menu no eixo Z — no mockup 3 ele continua legível com o painel 
 
 ### Menu
 
+- **Não existe em `projeto.html` (V1.11).** O menu inteiro (`.burger`,
+  `<nav id="menu">`, "quem somos", "contato") saiu do HTML da página de
+  projeto — sem burger (que sumiu de propósito, ver seção 6, "Página de
+  projeto"), esses painéis não tinham mais gatilho nenhum, então
+  ficaram removidos em vez de deixados como código morto inacessível.
+  `js/panel.js` também parou de ser carregado só nessa página, pelo
+  mesmo motivo. Descrição abaixo vale pras outras 4 páginas do site
+  (`index.html`, `ricardo-rapozo.html`, `daniela-luquini.html`,
+  `time.html`), onde nada mudou.
 - **Primeiro item, "Projetos" (V1.10) — era "Portfólio".** "vamos mudar
   a nomenclatura da página PORTFOLIO, agora vai se chamar PROJETOS."
   Só o texto do link muda (`<a href="./">`, mesmo destino de sempre);
@@ -1092,72 +1101,76 @@ grande + mídia ambiente clicável (abrindo o vídeo de verdade num modal)
 + grade de fotos abaixo. A V1.6 troca isso tudo por duas peças só:
 
 1. **Barra fixa no topo no desktop** (`.projeto-barra`), centralizada,
-   na mesma linha do logo/hambúrguer (`top: 18px`), texto transparente
-   (sem fundo próprio — um patch chegou a dar fundo em pílula pra
+   texto sem fundo próprio (um patch chegou a dar fundo em pílula pra
    resolver contraste sobre o vídeo, mas foi revertido: "erro meu",
    segundo o próprio pedido) — `[Diretor]: [Título do projeto]`,
    inteira em Inter (era Newsreader até a V1.9), `font-size: clamp(11px,
    1.3vw, 15px)` (dois patches seguidos pedindo "diminua um ponto",
    1px a menos nos dois limites do `clamp` a cada vez: `17px/13px` →
    `16px/12px` (V1.9) → `15px/11px` (V1.9.1)). O nome do diretor é link
-   pra página dele
-   (`<slug>.html`, resolvido via `window.DIRETORES` — `js/diretores.js`
-   agora carregado também em `projeto.html`, só pra isso), sempre
-   sublinhado — não só no hover/foco como o resto dos links do site;
-   exceção deliberada, pedida pra esse componente especificamente.
-   `max-width: min(60vw, 640px)` com `white-space: nowrap` +
-   `text-overflow: ellipsis` evita colisão com logo/hambúrguer em
+   pra página dele (`<slug>.html`, resolvido via `window.DIRETORES` —
+   `js/diretores.js` carregado também em `projeto.html`, só pra isso),
+   sempre sublinhado — não só no hover/foco como o resto dos links do
+   site; exceção deliberada, pedida pra esse componente
+   especificamente. `max-width: min(60vw, 640px)` com `white-space:
+   nowrap` + `text-overflow: ellipsis` evita colisão com logo/voltar em
    título longo ou tela estreita, truncando em vez de quebrar linha ou
    invadir os dois.
 
-   **No mobile (≤820px), vira uma faixa branca fixa no rodapé, com o
-   mesmo limite de `.projeto-voltar` (patch).** Pedido explícito:
-   "quando vamos para a versão mobile, o [diretor][título] vão para uma
-   barra branca fixa no rodapé. Que tem limite com o rodapé padrão da
-   página." Mesmo truque de `position: sticky` limitado pela caixa do
-   pai (ver "Link 'voltar'" logo abaixo) — só que agora `.projeto-barra`
-   TAMBÉM precisa ser filha direta de `.projeto-corpo`, não mais neta
-   dentro de `<main>`, pra esse alcance funcionar. Por isso ela deixou
-   de nascer dentro do `html` que `js/projeto.js` escreve em
-   `main.innerHTML`: agora é HTML estático em `projeto.html`
-   (`#projeto-barra`, `<p>` vazio, irmã de `<main>` e de
-   `.projeto-voltar`), e `render()` só preenche `barra.innerHTML`. No
-   breakpoint mobile, `.projeto-barra` troca `position: fixed; top` por
-   `position: sticky; bottom: 0`, ganha `width: 100%` e fundo
-   `var(--paper)`; `.projeto-voltar` sobe (`bottom: 70px`, estimativa da
-   altura da faixa nova) pra não ficar embaixo dela — as duas continuam
-   `position: sticky` **independentes**, cada uma limitada por
-   `.projeto-corpo`, então nenhuma das duas nunca invade o rodapé.
-2. **O vídeo de verdade toca direto, sem clique nenhum no meio do
+   **No mobile (≤820px), sempre vira uma faixa branca fixa no rodapé**
+   (V1.6, unificado nas duas variantes da página desde a V1.11). Pedido
+   original: "quando vamos para a versão mobile, o [diretor][título]
+   vão para uma barra branca fixa no rodapé." `position: sticky;
+   bottom: 0`, `width: 100%`, fundo `var(--paper)` — precisa ser filha
+   direta de `.projeto-corpo` (não neta, dentro de `<main>`) pro
+   "alcance" do sticky (limitado pela caixa do pai) funcionar; por isso
+   é HTML estático em `projeto.html` (`#projeto-barra`, `<p>` vazio,
+   irmã de `<main>`), e `render()` só preenche `barra.innerHTML`. Sem
+   galeria, `.projeto-corpo` é uma coluna flex de `100vh` (ver bloco
+   "sem galeria" abaixo) e `#projeto-barra` é o último item dela —
+   `position: sticky` sem nada rolando ao redor vira, na prática,
+   `relative`: fica parada na própria posição de flex-item, que já é o
+   rodapé da coluna.
+2. **`.projeto-voltar`, um link só, fixo no canto superior direito, nas
+   DUAS variantes da página (V1.11)** — substitui três mecanismos
+   antigos por um: o antigo `.projeto-voltar` sticky-até-o-fim-da-
+   rolagem (só com galeria, ver histórico logo abaixo), o `.projeto-
+   fechar` (só sem galeria, V1.10), e o `.burger` (que sumiu de vez das
+   duas). Texto "voltar", `href="./"`. Ver "LOGO — [Diretor]: [Título]
+   — VOLTAR" no comentário de `css/layout.css` pro detalhe de
+   alinhamento vertical entre os três elementos do chrome fixo (item 3
+   abaixo).
+3. **Alinhamento vertical entre logo, barra e voltar (V1.11) — achado
+   num screenshot marcado à mão.** "Atente-se para o alinhamento
+   desses elementos. Eu desenhei uma linha para mostrar como eles estão
+   desalinhados." Os três são `position: fixed` com fontes de tamanhos
+   DIFERENTES — usar o mesmo `top` fixo nos três alinha o TOPO da caixa
+   de cada um, não o CENTRO do texto, e caixas de altura diferente com
+   o mesmo topo ficam com centros diferentes. Corrigido calculando o
+   `top` de cada um a partir da MESMA linha média (a do `.logo`,
+   `18px + 21px/2 = 28.5px` do topo da viewport), subtraindo metade da
+   própria altura de caixa (`font-size × line-height`) — `.projeto-
+   barra` guarda o próprio `font-size` numa custom property (`--fs`)
+   pra poder reusar no cálculo do `top` (`calc(28.5px - (var(--fs) *
+   1.3) / 2)`); `.projeto-voltar` calcula direto (`19px`, fixo, já que
+   não tem tamanho variável). Verificado via Playwright: os três
+   centros de texto batendo em `28.5px` exatos, nas duas variantes.
+4. **O vídeo de verdade toca direto, sem clique nenhum no meio do
    caminho.** Não é mais a mídia ambiente (loop mudo) esperando um
    clique pra abrir um modal — `js/projeto.js` converte `p.video`
    direto num `<iframe>` (YouTube/Vimeo) ou `<video>` (mp4 local) com
    autoplay, dentro de `.projeto-video`.
 
 **Sem galeria, a página vira "só o player" — vídeo enchendo a viewport,
-sem rolagem, sem rodapé, "fechar" no lugar do burger (V1.10).** Pedido
-explícito, com referência visual: "Quando ela NÃO TIVER GALERIA veremos
-apenas o player do vídeo, sem rolagem da página... temos o botão
-'fechar' no canto superior direito ao invés do menu burguer... não
-temos rodapé." `js/projeto.js` decide sozinho, em `render()`, sem
-nenhuma configuração nova em `projetos.json`: `p.galeria` vazio ou
-ausente vira `html.classList.toggle('is-projeto-sem-galeria', true)` —
-toda a mudança de layout é CSS reagindo a essa classe, zero HTML
-gerado a mais.
+sem rolagem, sem rodapé (V1.10).** Pedido explícito, com referência
+visual: "Quando ela NÃO TIVER GALERIA veremos apenas o player do
+vídeo, sem rolagem da página... não temos rodapé." `js/projeto.js`
+decide sozinho, em `render()`, sem nenhuma configuração nova em
+`projetos.json`: `p.galeria` vazio ou ausente vira
+`html.classList.toggle('is-projeto-sem-galeria', true)` — toda a
+mudança de layout é CSS reagindo a essa classe, zero HTML gerado a
+mais.
 
-- **`.projeto-fechar`** — `<a href="./">fechar</a>` novo, estático em
-  `projeto.html`, `position:fixed; top:18px; right:var(--gutter)`,
-  exatamente o mesmo canto do `.burger`. `display:none` por padrão;
-  `html.is-projeto-sem-galeria .burger { display:none }` +
-  `html.is-projeto-sem-galeria .projeto-fechar { display:inline-block
-  }` — os dois nunca aparecem juntos, um substitui o outro no mesmo
-  lugar. Sem menu acessível nessa variante (o burger é o único jeito
-  de abrir `#menu`) — "quem somos"/"contato" ficam inacessíveis a
-  partir de uma página de projeto sem galeria, de propósito: o pedido
-  é uma experiência de "só o vídeo", não uma versão reduzida do menu.
-  `.projeto-voltar` também some (`display:none`) — sem rolagem, ele
-  nunca seria alcançável mesmo, e "fechar" já cobre a função de sair
-  da página.
 - **Sem rolagem**: `html.is-projeto-sem-galeria, html.is-projeto-sem-
   galeria body { height:100%; overflow:hidden }` — mesmo princípio de
   `html.is-overlay-open { overflow:hidden }` (seção 2), travando a
@@ -1175,20 +1188,11 @@ gerado a mais.
   abaixo do tamanho do próprio conteúdo — sem isso, o vídeo (com sua
   altura intrínseca) empurraria a página pra fora da viewport de novo,
   reintroduzindo a rolagem que essa variante existe pra evitar.
-- **Mobile**: a barra `[Diretor]: [Título]` não pode herdar o truque
-  "vira faixa branca grudada no rodapé" (item 1 acima) — não há rodapé
-  nem rolagem pra sustentar isso aqui. Volta pro tratamento fixo-no-topo
-  do desktop, mas sem `left:50%` centralizando na viewport INTEIRA
-  (numa tela estreita, isso colocava a caixa da barra por baixo do
-  logo) — `left`/`right` calculados a partir da largura de
-  `.logo`/`.projeto-fechar` (~125px/~60px, texto fixo — "vulpesfilmes"
-  e "fechar" não mudam) + folga, confinando a barra ao espaço real
-  entre os dois vizinhos, com `text-overflow:ellipsis` cortando o
-  título quando não couber.
-- **Com galeria, nada disso se aplica** — `is-projeto-sem-galeria`
-  nunca entra, a página mantém o esquema de sempre (item 1/2 acima,
-  rolagem normal, burger, galeria de fotos abaixo do vídeo). Único
-  efeito do V1.10 nesse caso: perde o rodapé também (ver abaixo).
+- **Com galeria, essa parte não se aplica** — `is-projeto-sem-galeria`
+  nunca entra, a página mantém rolagem normal e a galeria de fotos
+  abaixo do vídeo. O chrome fixo (item 1–3 acima) e a ausência de
+  burger/rodapé (V1.11) já são iguais nas duas variantes — só o "sem
+  rolagem" continua exclusivo de quando não há galeria.
 
 **O que saiu da página de projeto nessa reformulação** — mas continua
 existindo e em uso na home/galeria de diretor, só não mais aqui, então
@@ -1237,51 +1241,28 @@ inline, então virou função compartilhada (`window.VulpesHelpers.
 urlDeEmbed`) em vez de duas cópias da mesma regex arriscando desalinhar
 uma da outra com o tempo.
 
-**Link "voltar", fixo até o rodapé (V1.2, refeito em V1.3, lado trocado
-em V1.3.2).** A V1.2 tinha isso como um link em fluxo normal no fim da
-página, canto direito, igual ao `.diretor-voltar`. A V1.3 pediu outra
-coisa: acompanhando a rolagem como um botão flutuante fixo (primeiro no
-canto inferior esquerdo; a V1.3.2 trocou pro **direito** — só
-`text-align` muda, o mecanismo de sticky é o mesmo), mas sem nunca
-sobrepor o rodapé — "o limite desse botão é o rodapé". Isso é
-`position: sticky` puro, sem JS: `<p class="projeto-
-voltar">` vive dentro de um wrapper, `<div class="projeto-corpo">`, que
-envolve `<main id="conteudo-projeto">` **e** o próprio link, terminando
-exatamente onde o `<footer>` começa. O "alcance" de um elemento sticky
-é limitado pela caixa do PAI dele — então o link flutua a `bottom: 24px`
-enquanto `.projeto-corpo` ainda está passando pela tela, e para de
-acompanhar assim que a rolagem ultrapassa o fim dele, sem nunca invadir
-o rodapé. Sem esse wrapper (ou seja, como irmão direto do `<footer>`,
-que era a estrutura da V1.2), o alcance seria o `<body>` inteiro e o
-link continuaria grudado por cima do próprio rodapé.
-
-O wrapper não precisa de nenhuma mudança em `js/projeto.js`: `<main>`
-continua 100% escrito por JS (`main.innerHTML = html`, que nunca toca
-nos irmãos dele), e o link continua HTML estático em `projeto.html`,
-só que agora dentro do wrapper em vez de solto entre `<main>` e
-`<footer>`.
-
-**`<footer>` removido de `projeto.html` de vez na V1.10** ("item 6:
-o rodapé só aparece na página principal") — o mecanismo de sticky
-acima continua funcionando exatamente igual (ele nunca dependeu do
-`<footer>` existir, só da caixa de `.projeto-corpo`), mas o motivo
-original ("nunca sobrepor o rodapé") deixou de existir nessa página:
-sem nada depois de `.projeto-corpo`, "o fim do wrapper" e "o fim da
-página" agora são a mesma coisa. Deixado como está por ser
-estruturalmente inofensivo e já testado — só a razão histórica ficou
-obsoleta, não o código.
-
-**Cuidado se mexer aqui:** como `<p>` é um elemento de bloco, a caixa
-dele ocupa a largura inteira mesmo com o texto alinhado à direita —
-sem `pointer-events: none` no `<p>` (e `auto` só no `<a>` de dentro),
-a área vazia e transparente à esquerda do link bloquearia clique no
-que estivesse por baixo dele sempre que estivesse "grudado" pela
-rolagem, mesmo sem nada visível ali.
+**Histórico: "voltar" foi sticky-até-o-rodapé de V1.2 a V1.10, aposentado
+na V1.11.** V1.2: link em fluxo normal no fim da página, canto direito.
+V1.3: virou um botão flutuante fixo acompanhando a rolagem (canto
+inferior esquerdo, depois **direito** na V1.3.2), sem nunca sobrepor o
+rodapé — `position: sticky` limitado pela caixa de `.projeto-corpo`
+(mesmo princípio ainda em uso pela barra no rodapé mobile, item 1 mais
+acima). V1.10 removeu o `<footer>` desta página, e o motivo original
+("nunca sobrepor o rodapé") deixou de existir; V1.11 foi além e
+aposentou o próprio elemento — "voltar" virou um único link fixo no
+topo, o mesmo em qualquer estado da página, ver item 2 mais acima
+("`.projeto-voltar`, um link só"). `<p class="projeto-voltar">` (o
+wrapper de bloco com `pointer-events: none` + `auto` só no `<a>`, uma
+armadilha de CSS documentada aqui antes) não existe mais — o link novo
+é uma `<a class="projeto-voltar">` direto, sem wrapper, então essa
+armadilha específica não se aplica mais a este componente.
 
 **Modal de vídeo** (`js/video-modal.js`, `.video-modal` no HTML das
 páginas que ainda o incluem) é **deliberadamente separado** do sistema
-de painel de `js/panel.js`, pelo mesmo motivo do modal de fotos.
-Diferenças de propósito, não só de código:
+de painel de `js/panel.js` (que nem carrega mais em `projeto.html`
+desde a V1.11 — ver "LOGO — [Diretor]: [Título] — VOLTAR" mais acima),
+pelo mesmo motivo do modal de fotos. Diferenças de propósito, não só de
+código:
 
 - Fundo fixo próprio, não a cor sorteada da sessão — assistir vídeo não
   deve competir com o efeito de cor do site. **Branco (`var(--paper)`),
@@ -1751,6 +1732,7 @@ Abaixo dele:
 │   ├── feed.js           monta a home e a galeria de diretor
 │   ├── projeto.js        monta a página individual de projeto
 │   ├── panel.js          menu/quem-somos/contato: abrir, foco, inert
+│   │                       (não carregado em projeto.html desde V1.11)
 │   ├── idle-color.js     efeito de cor após 30s parado (V1.8)
 │   ├── video-modal.js    modal de vídeo (YouTube/Vimeo/mp4)
 │   ├── photo-modal.js    lightbox de fotos da galeria
@@ -1921,6 +1903,22 @@ escopo de um site 100% estático sem build.
 
 Bloqueiam a implementação:
 
+- [ ] **Vídeos do YouTube de `cbcc-2026` e `historias-do-brasil-redes`
+  mostraram "Vídeo indisponível... a conta do YouTube associada a ele
+  foi encerrada" (achado na V1.11) — mas intermitente, não é bug de
+  código.** Visto tanto no screenshot enviado (`cbcc-2026`) quanto numa
+  verificação direta via Playwright, nos dois projetos — mas ao
+  reconferir os dois logo em seguida (mais duas vezes cada), os
+  embeds carregaram normalmente. Não corrigido nem descartado: pode
+  ter sido uma instabilidade passageira do lado do YouTube (ou algum
+  rate-limit disparado pelos vários carregamentos em sequência durante
+  os testes desta versão), não necessariamente a conta de fato
+  encerrada — mas o erro específico ("conta encerrada") normalmente
+  não é o tipo de coisa que aparece à toa. Vale o usuário confirmar
+  esses dois vídeos direto no YouTube (login na conta, ver se algum
+  aviso apareceu) antes de assumir que está tudo bem; se acontecer de
+  novo, aí sim provavelmente precisa de link novo — não é algo que o
+  código do site (`urlDeEmbed()`) possa corrigir sozinho.
 - [ ] Lista de projetos: título, cliente, ano, registro, tipo de mídia, arquivos
 - [x] O carrossel quebra a alternância? — **Mantém o lado** (V6). O bug real
   era outro: `.block--right .block__main { grid-column: 2 }` sobrevivia à
@@ -3624,3 +3622,72 @@ APARECE NA PAGINA PRINCIPAL (que agora se chama PROJETOS)."
   galeria) — resultado comparado contra a referência visual enviada.
   Smoke test completo sem erro de console ou de rede genuíno além do
   ruído de terceiro já catalogado (Vimeo).
+
+### 1.11
+
+Patch, com dois screenshots de referência (um marcado à mão mostrando o
+desalinhamento): "TODAS as paginas do PROJETO devem obedecer o
+seguinte padrão: LOGO [DIRETOR] - [TITULO] VOLTAR (Menu Hamburger
+SOME]... Na versão mobile da página o título vai para o rodapé.
+ATENÇÃO: com a retirada do rodapé da pagina PROJETO, deixou um espaço
+estranho entre as imagens e a barra título. Corrija isso."
+
+- **As duas variantes de `projeto.html` (com e sem galeria) passam a
+  usar o MESMO chrome fixo** — até aqui só a variante sem galeria
+  (V1.10) tinha perdido o burger; a com-galeria mantinha burger +
+  `.projeto-voltar` sticky-até-o-fim-da-rolagem. Unificado: `.burger`,
+  `<nav id="menu">`, "quem somos" e "contato" saíram do HTML de
+  `projeto.html` de vez (sem burger, esses painéis não tinham mais
+  gatilho — removidos em vez de deixados como código morto).
+  `js/panel.js` parou de ser carregado nessa página pelo mesmo motivo
+  (continuaria assumindo elementos que não existem mais, gerando erro
+  de JS — `burger.addEventListener` sem guarda de `if`).
+- **`.projeto-voltar`, link único "voltar", fixo no canto superior
+  direito, nas duas variantes** — substitui três mecanismos antigos
+  por um: o `.projeto-voltar` sticky-até-o-fim-da-rolagem (V1.3, só
+  com galeria), o `.projeto-fechar` (V1.10, só sem galeria) e o
+  `.burger` (as duas). Mesmo destino de sempre (`href="./"`).
+- **Alinhamento vertical entre logo/barra/voltar corrigido a partir da
+  referência marcada à mão.** Causa raiz: os três `position:fixed` com
+  o mesmo `top` fixo, mas fontes de tamanhos DIFERENTES — alinhava o
+  TOPO da caixa de cada um, não o centro do texto, e caixas de altura
+  diferente com o mesmo topo ficam com centros diferentes. Corrigido
+  calculando o `top` de cada elemento a partir da MESMA linha média (a
+  do `.logo`, `18px + 21px/2 = 28.5px`), subtraindo metade da própria
+  altura de caixa — `.projeto-barra` guarda o `font-size` numa custom
+  property (`--fs`) pra poder reusar no `calc()` do `top`. Verificado
+  via Playwright: os três centros de texto em `28.5px` exatos, nas
+  duas variantes.
+- **Mobile: barra sempre vai pro rodapé, nas duas variantes** — antes,
+  a variante sem galeria tinha um desvio próprio (barra fixa no topo,
+  ancorada entre logo e "fechar", V1.10) porque não tinha rodapé nem
+  rolagem pra sustentar o truque do sticky-bottom. Unificado: a barra
+  sempre desce pro rodapé mobile (`position:sticky;bottom:0`); sem
+  galeria, como `.projeto-corpo` é uma coluna flex de `100vh` sem
+  nada rolando, o `sticky` vira `relative` na prática — fica parada
+  na própria posição de flex-item, que já é o rodapé da coluna.
+- **Espaço vazio entre a galeria e a barra, eliminado.** Causa: `#conteudo-
+  projeto` (`.feed`) reservava `padding-bottom: var(--block-gap)`
+  (72–160px) pra separar o conteúdo do `<footer>` que vinha em
+  seguida — órfão desde que o rodapé saiu de `projeto.html` (V1.10).
+  Zerado (`#conteudo-projeto { padding-bottom: 0 }`), incondicional
+  pras duas variantes. Verificado via Playwright: gap entre a última
+  foto da galeria e a barra, rolando até o fim no mobile, `0px` exatos
+  (era um vão de ~72-160px antes).
+- Verificado via Playwright: sem burger em `projeto.html` (as duas
+  variantes); `.projeto-voltar` navegando pra `/` ao clicar de
+  verdade; alinhamento de 28.5px confirmado; sem galeria continua sem
+  rolagem (`scrollHeight === innerHeight`); mobile sem colisão entre
+  logo/barra/voltar (testado com os textos reais "vulpesfilmes" e
+  "voltar"); zero erros de console/JS (confirma que a remoção de
+  `panel.js` não quebrou nada). Screenshots revisados visualmente
+  (desktop e mobile, com e sem galeria) contra a referência enviada.
+  **Achado à parte, não corrigido pelo código**: os vídeos do YouTube
+  de `cbcc-2026` e `historias-do-brasil-redes` mostraram "vídeo
+  indisponível, conta encerrada" — visto no screenshot enviado e
+  reproduzido uma vez via Playwright, mas não reproduzido em
+  verificações seguintes (provável instabilidade passageira, não bug
+  de código) — registrado na seção 11, Pendências, pro usuário
+  confirmar direto no YouTube. Smoke test completo sem erro de console
+  ou de rede genuíno além do ruído de terceiro já catalogado (Vimeo,
+  YouTube `compute-pressure`).
