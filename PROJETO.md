@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.17.1.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.17.4.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -16,7 +16,8 @@ A home não se apresenta. Ela entra direto no primeiro trabalho.
 Não há manchete, não há "somos uma produtora", não há grade de thumbnails.
 A página é uma coluna vertical de blocos grandes que alternam de lado.
 
-Tudo é calado até o menu abrir. Aí a página inunda de cor e as imagens viram duotone.
+Tudo é calado até o menu abrir. Aí a página inunda de cor e as imagens ganham
+um tingimento (multiply) por cima, sem perder as próprias cores.
 Esse é o único momento barulhento do site, e ele só acontece a pedido do usuário.
 
 ---
@@ -43,7 +44,9 @@ por 30s, V1.8 — ver "Ativação por inatividade" no fim desta seção**). Clas
 no `<html>`: `.is-overlay-open`.
 
 Uma cor é sorteada e passa a valer como `--hue`. Ela ocupa o fundo inteiro
-e vira o tom do duotone das mídias.
+e tinge as mídias por cima (ver "Efeito de cor nas mídias" abaixo). O
+rodapé usa essa mesma variável sem depender desse estado — ver "Rodapé",
+no fim desta seção.
 
 ```js
 const HUES = ['#EE7B85', '#E9D64A', '#7BC96F', '#7FB2E5', '#F2913F', '#B9A3E3'];
@@ -59,36 +62,58 @@ Regras da paleta:
 - A cor é sorteada no carregamento, não na abertura do menu. Abrir e fechar o
   menu três vezes seguidas deve dar sempre a mesma cor dentro da mesma visita.
 
-### Duotone
+### Efeito de cor nas mídias
 
 Aplicado às mídias apenas enquanto o menu está aberto.
+
+**Era "duotone" até a V1.17.3** — mídia convertida pra `grayscale` e
+tingida por cima com `mix-blend-mode: darken`, escolhido na época
+porque "mantém as sombras pretas e limita os claros ao valor da cor —
+o alto contraste do mockup." A V1.17.3 tirou o `filter` de vez ("tirar
+o Duotone, deixar apenas a cor com um efeito de Multiply em cima") —
+durou uma versão só: a V1.17.4 trouxe o P&B de volta ("antes de
+aplicar o efeito de cor no fundo, aplique um efeito de dessaturação e
+aumente o contraste"), só que sem reabrir o `darken` — o overlay
+continua `multiply`, mais sutil que o par duotone+darken original.
+V1.17.4 também somou grão ao overlay ("aplique um efeito de grão. é
+possível?") — textura de ruído (`--grain`, `tokens.css`) misturada com
+`--hue` DENTRO do mesmo `::after`, via `background-blend-mode:
+overlay`, antes desse elemento (cor + grão já combinados) multiplicar
+por cima da mídia.
 
 ```css
 .media { position: relative; }
 
 .media video,
-.media img {
-  filter: grayscale(1) contrast(1.3) brightness(.92);
-  transition: filter .28s ease;
-}
+.media img { transition: filter .28s ease; }
 
 .media::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--hue);
-  mix-blend-mode: darken;
+  background-color: var(--hue);
+  background-image: var(--grain);   /* SVG de ruído, ladrilhado 200x200px */
+  background-size: 200px 200px;
+  background-blend-mode: overlay;   /* mistura grão + --hue ENTRE SI */
+  mix-blend-mode: multiply;         /* aí sim tinge a mídia por baixo */
   opacity: 0;
   transition: opacity .28s ease;
   pointer-events: none;
 }
 
+.is-overlay-open .media video,
+.is-overlay-open .media img { filter: grayscale(1) contrast(1.3); }
+
 .is-overlay-open .media::after { opacity: 1; }
 ```
 
-`darken` mantém as sombras pretas e limita os claros ao valor da cor — é o que
-produz o alto contraste do mockup. `screen` ou `multiply` dariam resultado errado:
-o primeiro lava as sombras, o segundo escurece tudo.
+`--grain` é um único pseudo-elemento (`::after`) fazendo os dois
+trabalhos — não um `::before` adicional só pro grão. Motivo: `::before`
+nasce ANTES do conteúdo real na ordem de pintura (fica atrás da
+imagem, não por cima dela); `background-blend-mode` resolve compondo
+DUAS camadas de fundo do MESMO elemento antes de esse elemento (já com
+grão embutido) fazer seu próprio `mix-blend-mode` contra o que está
+atrás.
 
 **Bug corrigido (patch): a cobertura vazava conforme o site crescia.**
 O trecho acima é só pra `.media` — a classe do feed/carrossel original.
@@ -118,8 +143,10 @@ precisa entrar nessa lista também — não existe um mecanismo que
 detecta mídia nova automaticamente; é uma cobertura por enumeração, e
 esse bug é a prova de que esquecer de atualizá-la é fácil.
 
-No estado base o `filter` fica desligado (`filter: none`), então as mídias
-aparecem em cor cheia.
+No estado base não há `filter` nenhum aplicado às mídias — aparecem
+sempre em cor cheia, o `grayscale`/`contrast` só liga com
+`.is-overlay-open` (V1.17.4, ver acima). Assim como o `opacity` do
+overlay `::after`, que segue a mesma classe.
 
 ### Ativação por inatividade (V1.8)
 
@@ -133,8 +160,8 @@ timer = setTimeout(ativar, 30000);
 ```
 
 `ativar()` só faz `raiz.classList.add('is-overlay-open')` — reaproveita a
-MESMA classe/efeito dos painéis (fundo + duotone), não um efeito visual
-separado. `reiniciar()` (chamado a cada `mousemove`) desativa e zera o
+MESMA classe/efeito dos painéis (fundo + overlay de cor nas mídias), não
+um efeito visual separado. `reiniciar()` (chamado a cada `mousemove`) desativa e zera o
 cronômetro — qualquer movimento do mouse adia os 30s de novo, começando do
 zero; só falta de movimento sustentada dispara o efeito.
 
@@ -162,8 +189,22 @@ resolvem isso sem precisar os dois arquivos se conhecerem:
 
 Reaproveita as MESMAS transições CSS que já animam a entrada/saída do efeito
 em qualquer painel (`body { transition: background-color var(--t-panel) }`,
-`.28s` no filtro/duotone das mídias) — nenhuma CSS nova foi necessária, só o
+`.28s` no overlay de cor das mídias) — nenhuma CSS nova foi necessária, só o
 toggle da classe.
+
+### Rodapé (V1.17.3)
+
+Único elemento que usa `--hue` como cor PERMANENTE, não condicionada a
+`.is-overlay-open` — a variável já tem um valor desde o carregamento da
+página (sorteada por `js/hue.js`, ver "Estado painel aberto" acima, que
+roda antes de qualquer painel abrir), então o rodapé simplesmente
+aparece nessa cor o tempo todo, painel aberto ou não, mouse parado ou
+não. Antes (V1.6) era preto fixo, pelo mesmo motivo inverso: "ele
+mantém preto/claro o tempo todo" — só a cor de referência que trocou de
+preto pra `--hue`. Texto e borda usam `--ink` (preto), herdado da regra
+base do `footer` — a paleta de `--hue` é toda de luminância média-alta
+de propósito (ver "Regras da paleta" acima), então preto sempre
+contrasta bem em cima. Ver seção 8, "Rodapé", para o CSS completo.
 
 ---
 
@@ -668,7 +709,7 @@ Fica acima do menu no eixo Z — no mockup 3 ele continua legível com o painel 
   hoje, mantido em sincronia por precaução — ver seção 10) também
   atualizado, pelo mesmo motivo.
 - Painel desce do topo com altura natural do conteúdo, sem espaço negativo e sem scroll (overflow hidden).
-- Ao abrir: `--paper` do `body` vira `--hue`, hambúrguer vira X, mídias entram em duotone.
+- Ao abrir: `--paper` do `body` vira `--hue`, hambúrguer vira X, mídias ganham o overlay de cor (`multiply`, seção 2).
 - Fundo do painel: branco puro (`--panel-bg: #FFFFFF`), não sorteado.
 - Item da página atual não tem sublinhado visual (atributo `aria-current="page"` permanece para acessibilidade).
 - Redes sociais: só Instagram (`.social`, V1.2 — antes tinha Vimeo e
@@ -1476,7 +1517,7 @@ as que têm seus trabalhos.
 (mesmo `top:50%; left:50%; transform:translate(-50%,-50%)`, só que bem
 maior) — não sobe mais do rodapé cobrindo 2/3 da tela, era assim desde
 sempre até aqui. Abre `.is-overlay-open` igual aos outros dois painéis,
-então o fundo (e tudo que participa do duotone, seção 2) inunda de cor
+então o fundo (e tudo que participa do efeito de cor, seção 2) inunda de cor
 por baixo/ao redor do card — o card em si é branco (`var(--panel-bg)`),
 por cima da cor, não afetado por ela.
 
@@ -1503,7 +1544,7 @@ do card.
 Comportamento idêntico nos três: fecha com Esc e com clique fora, prende o foco
 enquanto aberto, devolve o foco ao gatilho ao fechar, `aria-expanded`, `inert`
 no conteúdo atrás, e todos disparam `.is-overlay-open` (cor de fundo sorteada
-da sessão + duotone nas mídias visíveis).
+da sessão + overlay de cor nas mídias visíveis).
 
 **Entrada/saída: fade simples de `opacity`, não mais dip to white
 (V1.7.8, revertendo a V1.7).** A V1.7 tinha trocado a entrada/saída do
@@ -1519,7 +1560,7 @@ removida (não sobrou nenhum painel que precise dela). `.panel--about`
 var(--ease-out)` própria — sem `scale` nem `transform` na lista de
 propriedades animadas, só opacidade, mais simples que
 `.panel--contact` (que anima `transform: scale()` junto). O efeito de
-cor (`is-overlay-open`, fundo + duotone) nunca dependeu da animação de
+cor (`is-overlay-open`, fundo + overlay de cor nas mídias) nunca dependeu da animação de
 entrada/saída de painel nenhuma — continua idêntico nas três variantes,
 como sempre foi.
 
@@ -1766,7 +1807,7 @@ de exibição. Isso libera orçamento de peso para loops maiores ou vídeos mais
 ```
 
 Com a preferência ativa: não dar autoplay, mostrar o `poster`, e desligar as
-transições de cor e duotone. O menu ainda funciona, só troca de estado sem animar.
+transições de cor e do overlay nas mídias. O menu ainda funciona, só troca de estado sem animar.
 
 ---
 
@@ -1816,23 +1857,54 @@ V8** — continuam só no menu (`.panel--menu .social`), não duplicadas aqui.
   mesma fonte e o mesmo peso, sem seletor específico por linha
   (`footer p:not(:first-child)` foi removido; a regra `footer` sozinha
   já cobre as três).
-- **Fundo invertido — preto, texto claro (V1.6)**: `footer.footer-
-  invertido { background: var(--ink); color: var(--paper); border-top-
-  color: var(--paper); }`, marcado direto no HTML (`<footer class=
-  "footer-invertido">`) das 5 páginas do site. Nasceu escopado só à
-  página de projeto (item da reformulação da V1.6), um patch na mesma
-  leva estendeu pra sitewide. `a { color: inherit }` (`base.css`) já
-  resolve o link do e-mail sozinho, sem seletor próprio — e como o
-  rodapé não fica mais sujeito à cor sorteada da sessão (`--hue`)
-  quando um painel abre (a regra de fundo/cor do painel mira `body`,
-  não `footer`), ele mantém preto/claro o tempo todo, painel aberto ou
-  não.
+- **Fundo `--hue`, texto preto (V1.6, cor trocada na V1.17.3)**:
+  `footer.footer-invertido { background: var(--hue); }`, marcado direto
+  no HTML (`<footer class="footer-invertido">`) das 4 páginas do site
+  que têm rodapé (`projeto.html` não tem, ver acima). Nasceu escopado
+  só à página de projeto (item da reformulação da V1.6, fundo preto na
+  época), um patch na mesma leva estendeu pra sitewide; cor e texto
+  corrigidos na V1.17.3 (pedido: "o rodapé não será mais preto, ele
+  terá a cor aleatória que está reservada pro efeito cor" + "mude a cor
+  da fonte para preto"). Texto não precisa de regra própria nesta
+  classe — a regra base `footer` já é `color: var(--ink)`; a versão
+  clara (`--paper`) só existia pra contrastar contra o preto de antes.
+  Borda removida de vez na V1.17.4 ("tire a borda preta do box do
+  rodapé. SEM BORDA") — a regra base `footer` não tem mais `border-top`
+  nenhum, pra nenhuma variante.
+  `a { color: inherit }` (`base.css`) resolve o link do e-mail sozinho,
+  sem seletor próprio. Diferente do efeito de painel (que liga/desliga
+  `--hue` no `body` via `.is-overlay-open`), o rodapé usa `--hue`
+  incondicionalmente — a variável já tem valor desde o carregamento da
+  página (`js/hue.js` roda antes de qualquer painel), então o rodapé
+  aparece nessa cor o tempo todo, painel aberto ou não (ver seção 2,
+  "Rodapé").
 
 **Layout e espaçamento:**
 
-- Fluxo normal, não fixo. Fica no fim de `<main>`, no lugar que lhe pertence.
-- Regra hairline `1px solid --ink` separando do último bloco.
+- Fluxo normal, não fixo. Fica logo depois de `<main>` (irmão, não filho),
+  no lugar que lhe pertence.
+- **Sem borda** separando do último bloco (V1.17.4 — tinha uma hairline
+  `1px solid --ink` desde sempre; removida a pedido: "tire a borda
+  preta do box do rodapé. SEM BORDA." O próprio fundo colorido, V1.17.3,
+  já faz esse papel de separação visual).
 - Padding: 24px `--gutter` (horizontal e vertical).
+- **Grudado no fim da viewport quando o conteúdo é curto (V1.17.2).**
+  Antes, uma página com pouco conteúdo (poucos projetos de um diretor,
+  por exemplo) deixava uma faixa vazia entre o fim do rodapé e o fim da
+  tela — o rodapé simplesmente terminava onde o `<main>` acabava, sem
+  nada empurrando-o pro fim. `body { min-height: 100dvh; display: flex;
+  flex-direction: column }` + `.feed { flex: 1 }` (`base.css`/
+  `layout.css`) resolve: `.feed` cresce pra ocupar o espaço sobrando
+  acima do rodapé, então o rodapé sempre encosta no fim da viewport
+  (ou no fim do conteúdo, o que for maior — quando o conteúdo já é mais
+  alto que a tela, nada muda, a página rola normal). `100dvh`, não
+  `100vh` — única exceção à convenção do site de usar `vh` — porque no
+  Safari mobile `100vh` ignora o recolhimento da barra de endereço e
+  fica maior que a área visível real, reabrindo o mesmo tipo de vão que
+  este fix existe pra fechar. Afeta as 4 páginas com `<footer>` (home,
+  os dois diretores, `time.html`); inerte em `projeto.html`, que não
+  tem `<footer>` e cujo `#conteudo-projeto` é filho de `.projeto-corpo`,
+  não de `body` diretamente (ver seção 6).
 
 **Interação:**
 
@@ -4048,3 +4120,138 @@ que não precisam desse respiro todo.
   não afetada pelo seletor. Smoke test completo sem erro de console ou
   de rede genuíno além do ruído de terceiro já catalogado (Vimeo, em
   `global-renewable-alliance-cop30`).
+
+### 1.17.2
+
+Pedido: "O rodapé da página TRABALHOS/DANIELA-LUQUINI está com uma
+altura bizarra. Deve ser por conta de ter poucos trabalhos por ora." —
+diagnóstico confirmou a intuição do pedido: não é a altura do PRÓPRIO
+`<footer>` (sempre 107px, fixa, independente de viewport — 3 linhas de
+texto + padding), e sim que ele nunca teve nada empurrando-o pro fim da
+tela. Numa página comprida (Ricardo, com vários projetos; a home) isso
+nunca apareceu porque o conteúdo já é mais alto que qualquer viewport.
+Daniela, com só 1 projeto por ora, expôs o problema pela primeira vez:
+no mobile (390×844), o `<footer>` terminava em ~615px e sobrava uma
+faixa cinza vazia de ~230px até o fim da tela — o rodapé "flutuando"
+no meio da página, e não uma altura literalmente errada.
+
+- **`body` vira coluna flex com `min-height: 100dvh`** (`css/base.css`)
+  **e `.feed` ganha `flex: 1`** (`css/layout.css`) — padrão "sticky
+  footer": `.feed` (único filho de fluxo normal de `body` além do
+  `<footer>` em todas as páginas que têm rodapé — `.logo`/`.burger`/
+  `.panel`/os modais são todos `position: fixed`, fora do fluxo) cresce
+  pra ocupar o espaço sobrando, empurrando o rodapé pro fim da viewport
+  quando o conteúdo é curto. Quando o conteúdo já é mais alto que a
+  tela, item flex não encolhe abaixo do próprio conteúdo — comporta-se
+  exatamente como antes, com rolagem normal.
+- **`100dvh`, não `100vh`** (única exceção à convenção do site, que usa
+  `vh` — ver `--block-gap` em `tokens.css`): no Safari mobile, `100vh`
+  ignora o recolhimento da barra de endereço e mede mais do que a área
+  realmente visível, o que reabriria um vão parecido com o que este fix
+  existe pra fechar.
+- Inerte em `projeto.html`: lá não existe `<footer>`, e `#conteudo-
+  projeto` (`.feed`) é filho de `.projeto-corpo`, não de `body`
+  diretamente — `flex: 1` não tem container flex pra reagir na variante
+  com galeria; na variante sem galeria, `html.is-projeto-sem-galeria
+  #conteudo-projeto` já tem seu próprio `flex: 1` mais específico
+  (seletor por ID), que continua no comando.
+- Verificado via Playwright: `daniela-luquini.html` no mobile (390×844)
+  — rodapé agora termina exatamente no fim da viewport (antes: ~230px
+  de vão vazio abaixo dele). Nas 4 páginas com rodapé (home, os dois
+  diretores, `time.html`), desktop (1600×900) e mobile, confirmado que
+  páginas com conteúdo mais alto que a viewport não mudam nada
+  (rodapé continua no fim do conteúdo real, precisando de scroll, como
+  sempre). `projeto.html`, com e sem galeria, confirmado visualmente
+  sem nenhuma mudança de layout. Smoke test completo sem erro de
+  console ou de rede genuíno além do ruído de terceiro já catalogado
+  (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.17.3
+
+Pedido, em três partes: "1. O RODAPÉ não será mais PRETO. Ele terá a
+cor aleatória que está reservado par ao efeito cor. 2. Mude a cor da
+fonte para PRETO. 3. Vamos alterar o efeito de cor. Tirar o Duotone.
+Deixe apenas a cor com um efeito de Multiply em cima."
+
+- **Rodapé: fundo `var(--ink)` (preto) → `var(--hue)`** (a cor
+  sorteada por sessão, `js/hue.js`), texto `var(--paper)` → `var(--ink)`
+  (`footer.footer-invertido`, `css/base.css`). Diferente do efeito de
+  painel (que só tinge o `body` enquanto `.is-overlay-open`), o rodapé
+  usa `--hue` incondicionalmente — a variável já tem valor desde o
+  carregamento da página, então o rodapé aparece nessa cor o tempo
+  todo, painel aberto ou não, exatamente como o preto de antes também
+  era constante. Texto e borda não precisaram de regra própria: a base
+  `footer` já é `color: var(--ink)` / `border-top: 1px solid var(--ink)`
+  — a versão clara das duas só existia pra contrastar contra o preto.
+- **Efeito de cor nas mídias: duotone → overlay simples com `multiply`.**
+  Removido o `filter: grayscale(1) contrast(1.3) brightness(.92)` que
+  convertia a mídia pra P&B antes de tingir (`.media video`/`.media
+  img` e os três containers análogos — `.diretor-bio__foto`,
+  `.projeto-video`, `.galeria-fotos__item`, `css/layout.css`); o
+  overlay `::after` que já existia (`background: var(--hue)`) trocou
+  `mix-blend-mode: darken` por `multiply`. Mídia mantém as cores
+  originais, só recebe a cor da sessão multiplicada por cima — efeito
+  mais sutil que o duotone de alto contraste de antes.
+- **Terminologia atualizada nos comentários** (`css/base.css`,
+  `css/layout.css`, `js/hue.js`, `js/panel.js`, `js/idle-color.js`, e
+  as partes vivas — não-changelog — do PROJETO.md, seções 1, 2 e 8):
+  "duotone" trocado por "overlay de cor nas mídias" em toda referência
+  ao estado ATUAL do efeito; changelog antigo mantido como estava, por
+  descrever a versão da época (era duotone de fato, quando escrito).
+- Verificado via Playwright: `--hue` do rodapé confirmado idêntico ao
+  `--hue` do `<html>` (fechado e com o menu aberto — sem variar com o
+  estado do painel); `color` computado do rodapé confirmado `rgb(0,0,0)`.
+  Overlay das quatro classes de mídia (`.media`, `.diretor-bio__foto`,
+  `.projeto-video`, `.galeria-fotos__item`) confirmado com
+  `mix-blend-mode: multiply` e `filter: none` na imagem por baixo, com
+  o menu aberto. Revisão visual por screenshot: mídia mantém cor
+  original sob o tingimento, rodapé na cor da sessão com texto preto
+  legível. Smoke test completo sem erro de console ou de rede genuíno
+  além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).
+
+### 1.17.4
+
+Pedido: "1. tire a borda preta do box do rodapé. SEM BORDA. 2. Antes de
+aplicar o efeito de cor no fundo. Aplique um efeito de dessaturação
+(DEIXE A IMAGEM EM PRETO E BRANCO) e aumente o contraste. (Aplique um
+efeito de grão. é possível?)"
+
+- **Rodapé sem borda.** `border-top: 1px solid var(--ink)` removido da
+  regra base `footer` (`css/base.css`) — não só trocado de cor, tirado
+  de vez, das 4 páginas que têm rodapé.
+- **P&B + contraste de volta antes do tingimento — mas sem reabrir o
+  `darken` da V1.6.** `filter: grayscale(1) contrast(1.3)` reaplicado
+  em `.media video`/`img` e nos três containers análogos
+  (`.diretor-bio__foto`, `.projeto-video`, `.galeria-fotos__item`,
+  `css/layout.css`), só com `.is-overlay-open`. Sem `brightness(.92)` —
+  não foi pedido, e o overlay `multiply` já escurece por conta própria.
+  O overlay continua `mix-blend-mode: multiply` (não voltou a
+  `darken`): mídia em P&B alto contraste, tingida por cima de forma
+  mais sutil que o duotone original.
+- **Grão — "é possível?": sim, via SVG de ruído (`feTurbulence` +
+  `feColorMatrix` dessaturando + `feComponentTransfer` comprimindo o
+  contraste do ruído pra um grão fino, não estático puro), tokenizado
+  em `--grain` (`css/tokens.css`), ladrilhado a 200×200px.** Testadas
+  três variações de frequência/octaves/intensidade num harness isolado
+  (`grain-test.html`, fora do repo) antes de escolher — a mais fina
+  (`baseFrequency 0.7`, `numOctaves 4`, contraste do ruído comprimido
+  pra ~25% da amplitude original) ficou com textura de grão de filme,
+  não ruído digital bruto. Aplicado num ÚNICO `::after` por container
+  (não um `::before` extra): `background-image: var(--grain)` somado a
+  `background-color: var(--hue)` no mesmo elemento, misturados ENTRE SI
+  via `background-blend-mode: overlay`, e só DEPOIS esse elemento
+  (cor+grão já combinados) tinge a mídia por baixo via `mix-blend-mode:
+  multiply` — um `::before` teria nascido antes do conteúdo real na
+  ordem de pintura e ficado atrás da imagem, não por cima.
+- Verificado via Playwright: `filter` computado da mídia confirmado
+  `grayscale(1) contrast(1.3)` com o painel aberto; `::after` confirmado
+  com `background-blend-mode: overlay` e `mix-blend-mode: multiply`
+  nos quatro containers de mídia; `border-top-width` do rodapé
+  confirmado `0px`. Revisão visual por screenshot em `index.html`
+  (menu aberto) e `ricardo-rapozo.html#bio` (menu aberto, cor da sessão
+  amarela nessa rodada) — mídia em P&B alto contraste, grão visível
+  tanto na foto quanto na área de cor sólida ao redor, rodapé sem linha
+  nenhuma separando do conteúdo. Smoke test completo sem erro de
+  console ou de rede genuíno além do ruído de terceiro já catalogado
+  (Vimeo, em `global-renewable-alliance-cop30`).

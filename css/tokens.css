@@ -6,7 +6,15 @@
 
   /* cor — sorteada por sessão, escrita por js/hue.js */
   --hue: #EE7B85;
-  
+
+  /* textura de grão (V1.17.4) — SVG de ruído (feTurbulence + feColorMatrix
+     dessaturando + feComponentTransfer comprimindo o contraste pra um
+     grão sutil, não ruído bruto), ladrilhado em 200x200px. Usado só no
+     overlay de cor das mídias (css/layout.css) via `background-blend-
+     mode: overlay`, misturando o grão com `--hue` ANTES desse par ir
+     pro `mix-blend-mode: multiply` que tinge a mídia por baixo. */
+  --grain: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC43JyBudW1PY3RhdmVzPSc0JyBzdGl0Y2hUaWxlcz0nc3RpdGNoJyByZXN1bHQ9J3QnLz48ZmVDb2xvck1hdHJpeCBpbj0ndCcgdHlwZT0nc2F0dXJhdGUnIHZhbHVlcz0nMCcgcmVzdWx0PSdnJy8+PGZlQ29tcG9uZW50VHJhbnNmZXIgaW49J2cnPjxmZUZ1bmNSIHR5cGU9J2xpbmVhcicgc2xvcGU9JzAuMjUnIGludGVyY2VwdD0nMC4zNycvPjxmZUZ1bmNHIHR5cGU9J2xpbmVhcicgc2xvcGU9JzAuMjUnIGludGVyY2VwdD0nMC4zNycvPjxmZUZ1bmNCIHR5cGU9J2xpbmVhcicgc2xvcGU9JzAuMjUnIGludGVyY2VwdD0nMC4zNycvPjwvZmVDb21wb25lbnRUcmFuc2Zlcj48L2ZpbHRlcj48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWx0ZXI9J3VybCgjbiknLz48L3N2Zz4=");
+
   /* painel de menu e quem somos */
   --panel-bg: #FFFFFF;
 

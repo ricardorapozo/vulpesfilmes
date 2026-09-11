@@ -2,8 +2,9 @@
    contato e quem-somos são cards centralizados, fade simples de
    opacidade (ver `.panel--about`/`.panel--contact` em base.css). Esc,
    clique fora, foco preso, inert atrás. .is-overlay-open no <html>
-   dispara a cor de fundo e o duotone — independente da animação de
-   entrada/saída de cada painel, não muda com nenhuma delas.
+   dispara a cor de fundo e o overlay de cor nas mídias — independente
+   da animação de entrada/saída de cada painel, não muda com nenhuma
+   delas.
 
    V1.7 tinha trocado a entrada/saída do "quem somos" pelo "dip to
    white" padrão do site (`document.startViewTransition()`, mesmo

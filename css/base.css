@@ -44,6 +44,23 @@
 
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 
+/* V1.17.2: `body` vira coluna flex de altura mínima igual à viewport —
+   junto com `.feed { flex: 1 }` (layout.css), é o que gruda o rodapé no
+   fim da tela quando o conteúdo é mais curto que ela (poucos projetos,
+   caso da Daniela por ora). Sem isso, o rodapé some no fim do `<main>`
+   e sobra uma faixa vazia até o fim da viewport — normal em qualquer
+   página curta, mas só ficou visível agora que uma página real tem
+   pouco conteúdo. `100dvh`, não `100vh` (única exceção da convenção do
+   projeto, que usa `vh`): no Safari mobile `100vh` conta a barra de
+   endereço como se estivesse sempre recolhida, então a viewport "real"
+   é menor que `100vh` — exatamente o tipo de gap que este fix existe
+   pra fechar. `.logo`/`.burger`/`.panel`/os modais são todos `position:
+   fixed`, fora do fluxo — só `<main class="feed">` e `<footer>` viram
+   itens flex de verdade (ver `.projeto-corpo` em `projeto.html`, que
+   não é filho direto de `body` e por isso não participa disso). Quando
+   o conteúdo é mais alto que a viewport, `.feed` não encolhe abaixo do
+   próprio tamanho (comportamento padrão de item flex) e a página rola
+   normalmente, como sempre. */
 body {
   background: var(--paper);
   color: var(--ink);
@@ -51,6 +68,9 @@ body {
   font-variation-settings: 'wdth' 100, 'wght' 400;
   font-size: 15px;
   line-height: 1.5;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   overflow-x: hidden;
   transition: background-color var(--t-panel) var(--ease-out);
   -webkit-font-smoothing: antialiased;
@@ -214,7 +234,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
    dip ("retire animação DIP TO WHITE... entra o card FADE IN FADE OUT
    NORMAL") e voltou a um fade simples de `opacity`, só que sem o
    `scale` que `.panel--contact` usa — puro fade, como pedido. O efeito
-   de cor (`is-overlay-open`, fundo + duotone) não depende dessa
+   de cor (`is-overlay-open`, fundo + overlay de cor nas mídias) não depende dessa
    transição nenhuma e continua igual. */
 .panel--about {
   top: 50%;
@@ -488,8 +508,8 @@ html.is-photo-open .projeto-voltar { display: none; }
 
 /* ---------- modal de vídeo ----------
    Deliberadamente fora do sistema de "painel" (menu/quem-somos/contato):
-   fundo fixo próprio, não a cor sorteada da sessão, e sem o duotone nas
-   mídias atrás — o objetivo é assistir o vídeo, não o efeito de cor.
+   fundo fixo próprio, não a cor sorteada da sessão, e sem o overlay de
+   cor nas mídias atrás — o objetivo é assistir o vídeo, não o efeito de cor.
    Ver js/video-modal.js.
 
    PATCH: fundo branco (`var(--paper)`), não mais preto de cinema —
@@ -652,7 +672,6 @@ html.is-photo-open .projeto-voltar { display: none; }
    herdam isso igual, não precisa de seletor específico pro copyright. */
 footer {
   padding: 24px var(--gutter);
-  border-top: 1px solid var(--ink);
   background: transparent;
   font-variation-settings: 'wdth' 100, 'wght' 700;
   font-size: 14px;
@@ -668,11 +687,21 @@ footer p {
    class="footer-invertido">` nas 5 páginas do site (a classe é a mesma
    em todas, só marcada direto no HTML de cada uma). `a { color: inherit
    }` (topo deste arquivo) já resolve o link do e-mail sozinho, sem
-   seletor próprio. */
+   seletor próprio.
+
+   V1.17.3: "o rodapé não será mais preto, ele terá a cor aleatória que
+   está reservada pro efeito cor" — fundo vira `var(--hue)` (a mesma
+   variável do efeito de cor sorteado por sessão, `js/hue.js`), sempre,
+   não só quando um painel abre (igual o preto de antes: constante,
+   painel aberto ou não — só a cor que mudou). Texto volta a preto: a
+   regra base `footer { color: var(--ink) }` já resolve sozinha, então
+   esta classe não precisa mais sobrescrever `color`.
+
+   V1.17.4: "tire a borda preta do box do rodapé. SEM BORDA" — o
+   `border-top` (regra base `footer`) foi removido de vez, não só
+   trocado de cor. */
 footer.footer-invertido {
-  background: var(--ink);
-  color: var(--paper);
-  border-top-color: var(--paper);
+  background: var(--hue);
 }
 
 footer a {

@@ -1,6 +1,6 @@
 /* V1.8: efeito de cor cobre a página inteira depois de 30s parada, sai
    assim que o mouse volta a se mover. Reaproveita a MESMA classe
-   `is-overlay-open` que os painéis já usam (fundo + duotone nas
+   `is-overlay-open` que os painéis já usam (fundo + overlay de cor nas
    mídias, seção 2 do PROJETO.md) — só ativa se nenhum painel de
    verdade já estiver aberto, e só desativa o que ela mesma ligou, pra
    não brigar com `js/panel.js` (que também controla essa classe

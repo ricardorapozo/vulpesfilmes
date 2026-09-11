@@ -4,6 +4,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--block-gap);
+  /* V1.17.2: item flex de `body` (ver base.css) — cresce pra empurrar o
+     rodapé pro fim da viewport quando o conteúdo é curto. Inerte em
+     `projeto.html`: lá `#conteudo-projeto` (`.feed`) é filho de
+     `.projeto-corpo`, não de `body` diretamente, então `flex` não tem
+     container flex pra reagir (exceto dentro de `is-projeto-sem-
+     galeria`, que já sobrescreve com seu próprio `flex: 1`, ver abaixo). */
+  flex: 1;
 }
 
 /* =========================================================
@@ -89,21 +96,43 @@
 }
 
 
-/* ---------- duotone, ativo só com painel aberto ---------- */
+/* ---------- efeito de cor, ativo só com painel aberto ----------
+   V1.17.3: era duotone (mídia em `grayscale` + overlay `mix-blend-mode:
+   darken`) — "tirar o Duotone, deixar apenas a cor com um efeito de
+   Multiply em cima": tirou o `filter`, só sobrou o overlay de `--hue`
+   com `multiply`.
+
+   V1.17.4: volta o P&B, mas não o duotone de antes — "antes de aplicar
+   o efeito de cor no fundo, aplique um efeito de dessaturação (P&B) e
+   aumente o contraste." `filter: grayscale(1) contrast(1.3)` na mídia
+   de novo (sem o `brightness(.92)` que a V1.6 original tinha — não foi
+   pedido, e o `multiply` já escurece sozinho); o overlay continua
+   `multiply` (não voltou o `darken` da V1.6). Grão (V1.17.4, "é
+   possível?"): `--grain` (`tokens.css`, SVG de ruído) somado ao
+   `background` do MESMO `::after`, misturado com `--hue` via
+   `background-blend-mode: overlay` — mistura as camadas de fundo desse
+   elemento ENTRE SI, antes do `mix-blend-mode: multiply` (que mistura
+   o elemento inteiro, já com grão, contra a mídia por baixo) entrar em
+   ação. Um pseudo-elemento só, sem `::before` extra — evita problema de
+   ordem de pintura (`::before` nasce ANTES do conteúdo real no DOM,
+   ficaria atrás da imagem, não por cima). */
 
 .media::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--hue);
-  mix-blend-mode: darken;
+  background-color: var(--hue);
+  background-image: var(--grain);
+  background-size: 200px 200px;
+  background-blend-mode: overlay;
+  mix-blend-mode: multiply;
   opacity: 0;
   transition: opacity .28s ease;
   pointer-events: none;
 }
 
 html.is-overlay-open .media video,
-html.is-overlay-open .media img { filter: grayscale(1) contrast(1.3) brightness(.92); }
+html.is-overlay-open .media img { filter: grayscale(1) contrast(1.3); }
 
 html.is-overlay-open .media::after { opacity: 1; }
 
@@ -134,8 +163,11 @@ html.is-overlay-open .media::after { opacity: 1; }
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--hue);
-  mix-blend-mode: darken;
+  background-color: var(--hue);
+  background-image: var(--grain);
+  background-size: 200px 200px;
+  background-blend-mode: overlay;
+  mix-blend-mode: multiply;
   opacity: 0;
   transition: opacity .28s ease;
   pointer-events: none;
@@ -146,7 +178,7 @@ html.is-overlay-open .projeto-video img,
 html.is-overlay-open .projeto-video video,
 html.is-overlay-open .projeto-video iframe,
 html.is-overlay-open .galeria-fotos__item img {
-  filter: grayscale(1) contrast(1.3) brightness(.92);
+  filter: grayscale(1) contrast(1.3);
 }
 
 html.is-overlay-open .diretor-bio__foto::after,
@@ -283,7 +315,7 @@ html.is-overlay-open .galeria-fotos__item::after {
 }
 
 /* ---------- bloco de pessoa (time) ----------
-   Variante do bloco de projeto: mesmo sticky, mesmo hover, mesmo duotone.
+   Variante do bloco de projeto: mesmo sticky, mesmo hover, mesmo overlay de cor.
    Muda a proporção, porque retrato vertical + bio longa não cabem na
    divisão 82/18 da home — a coluna vazia vira coluna de texto. */
 
