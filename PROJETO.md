@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.4.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.5.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -4673,5 +4673,28 @@ respondido `clamp(36px, 6vw, 84px)` — e só depois pediu a redução.
   de `.panel--menu ul a` confirmados retornando o mesmo `font-size`
   (`52px` na viewport de teste, 1600px). Revisão visual por screenshot
   confirma a fonte visivelmente menor, sem quebra de layout. Smoke
+  test completo sem erro de console ou de rede genuíno além do ruído
+  de terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.5
+
+Pedido: "EU apenas atualizei o favicon. Atualize, commit & push it" —
+usuário substituiu `media/favicon-Vulpes.png` (32×32, RGB → RGBA,
+1696 → 1990 bytes) direto no arquivo, fora do fluxo normal de patch.
+Chamado de "PATCH 18.3" na mensagem, mas esse número já existia no
+changelog (V1.18.3, os `<h3>` do bloco de menu) — renumerado pra
+V1.18.5 (próximo disponível) pra não colidir.
+
+- Nenhuma mudança de código — só o binário do favicon, trocado pelo
+  usuário. Verificado que o arquivo continua um PNG válido 32×32 e que
+  `<link rel="icon" href="media/favicon-Vulpes.png">` (já existente
+  desde a V1.18.1.1) carrega ele com `200`.
+- **Correção no caminho: o selo de versão (`.rodape-versao`, V1.18.2)
+  estava desatualizado.** Achado ao ir bumpar a versão desta vez —
+  ficou em `v1.18.2` nas 4 páginas com rodapé mesmo depois das V1.18.3
+  e V1.18.4, que deveriam ter atualizado e não atualizaram (lapso na
+  disciplina descrita no próprio changelog dessas duas versões).
+  Corrigido pra `v1.18.5` nas 4 páginas nesta mesma leva.
+- Verificado via Playwright: favicon confirmado servindo `200`; smoke
   test completo sem erro de console ou de rede genuíno além do ruído
   de terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
