@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<link rel="icon" type="image/png" href="media/favicon-Vulpes.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>vulpesfilmes</title>
 <meta name="description" content="Produtora de documentários. Registros documentais, autorais e publicitários.">
@@ -34,12 +35,27 @@
   <span></span><span></span><span></span>
 </button>
 
-<main id="conteudo" class="feed"></main>
+<main id="conteudo" class="feed">
+  <div class="bloco-menu">
+    <ul>
+      <li><h3><a href="./" class="rodape-projetos" aria-current="page">Projetos</a></h3></li>
+      <li><h3><button type="button" class="rodape-diretores" data-abre="menu">Diretores</button></h3></li>
+      <li><h3><a href="#quem-somos" data-abre="quem-somos">Quem somos</a></h3></li>
+      <li><h3><a href="#contato" data-abre="contato">Contato</a></h3></li>
+    </ul>
+  </div>
+</main>
 
 <footer class="footer-invertido">
-  <p><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a> &copy; 2026</p>
-  <p>São Paulo/SP, Brasil</p>
-  <p>Atendendo o mundo todo</p>
+  <div class="rodape-col">
+    <p>São Paulo/SP, Brasil</p>
+    <p>Atendendo o mundo todo</p>
+  </div>
+  <div class="rodape-col">
+    <p class="rodape-social"><a href="#">Instagram</a></p>
+    <p><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a></p>
+  </div>
+  <p class="rodape-versao">&copy; 2026 v1.18.2</p>
 </footer>
 
 <nav id="menu" class="panel panel--menu" aria-label="Navegação principal" aria-hidden="true">
@@ -92,6 +108,7 @@
 <script src="js/projetos.js"></script>
 <script src="js/feed.js"></script>
 <script src="js/panel.js"></script>
+<script src="js/footer-menu.js"></script>
 <script src="js/idle-color.js"></script>
 <script src="js/media.js"></script>
 <script src="js/carousel-infinite.js"></script>

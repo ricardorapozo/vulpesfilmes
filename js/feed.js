@@ -81,15 +81,27 @@
       html += blocoHTML(p, lado);
       lado = (lado === 'left') ? 'right' : 'left';
     });
-    alvo.innerHTML = html;
+    /* V1.18.1.1: `insertAdjacentHTML('afterbegin', ...)`, não mais
+       `innerHTML = html` — a home (`#conteudo`) passou a nascer com um
+       filho estático próprio, `.bloco-menu` (itens do menu como último
+       bloco do feed), escrito direto no `index.html`. Sobrescrever com
+       `innerHTML` apagaria esse bloco a cada render; inserir no início
+       empurra os projetos pra ANTES dele, deixando-o como o último
+       item de verdade — e ainda funciona igual pra `.galeria[data-
+       diretor]`, que começa vazia (afterbegin nesse caso é idêntico a
+       innerHTML). */
+    alvo.insertAdjacentHTML('afterbegin', html);
     document.dispatchEvent(new CustomEvent('feed:pronto'));
   }
 
   document.addEventListener('projetos:pronto', function () {
-    /* Home: só se #conteudo existir vazio e não for uma página de diretor —
-       time.html reaproveita #conteudo com blocos de pessoa escritos à mão. */
+    /* Home: só se #conteudo ainda não tiver os projetos renderizados
+       (`.block`, ver `blocoHTML`) — não mais "vazio", porque agora
+       nasce com `.bloco-menu` dentro (ver `render()` acima). Segue
+       sem rodar em página de diretor — `time.html` reaproveita
+       `#conteudo` com blocos de pessoa escritos à mão. */
     var feed = document.getElementById('conteudo');
-    if (feed && !feed.hasAttribute('data-diretor-page') && !feed.children.length) {
+    if (feed && !feed.hasAttribute('data-diretor-page') && !feed.querySelector('.block')) {
       render(window.PROJETOS, feed);
     }
 

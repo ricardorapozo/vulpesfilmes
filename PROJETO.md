@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.17.5.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.4.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -47,6 +47,31 @@ Uma cor é sorteada e passa a valer como `--hue`. Ela ocupa o fundo inteiro
 e tinge as mídias por cima (ver "Efeito de cor nas mídias" abaixo). O
 rodapé usa essa mesma variável sem depender desse estado — ver "Rodapé",
 no fim desta seção.
+
+**O fundo do `body` também ganhou grão (V1.17.6)** — "a cor azul não é
+aplicada de forma uniforme": a V1.17.4 deu grão + P&B só pras mídias; o
+`background` do `body` (que preenche cabeçalho, margens, o vão entre
+vídeo e galeria em `projeto.html`) ficou de fora, um `--hue` chapado ao
+lado de mídia texturizada — mesma cor, mas parecia mais clara/fraca por
+comparação. Mesmo `--grain` e o mesmo `background-blend-mode: overlay`
+das mídias, agora também no `body` (`css/base.css`); sem `mix-blend-
+mode` aqui, porque não tem nada atrás do `body` pra misturar contra.
+
+**A V1.17.6 resolveu cabeçalho/vão-entre-galeria, mas criou o problema
+inverso em `.projeto-video` (corrigido na V1.17.7).** `.projeto-video`
+tem `padding-inline: var(--gutter)` próprio (os outros containers de
+mídia não têm padding nenhum) — como `.projeto-video::after` usava
+`inset: 0`, ele cobria a caixa INTEIRA, inclusive esse padding. Depois
+da V1.17.6, esse respiro lateral passou a ter DOIS `multiply` empilhados
+(o do `body`, por baixo, mais o do próprio `.projeto-video::after`, por
+cima — sem nenhuma imagem ali pra justificar um segundo tingimento),
+ficando mais escuro que o cabeçalho e o vão entre as fotos da galeria
+("as barras ao lado do vídeo são mais escuras que o cabeçalho e as
+linhas da galeria"). Fix: `.projeto-video::after` ganhou `inset: 0
+var(--gutter)` (exclui da área tingida exatamente a faixa de padding
+lateral, deixando só a camada única do `body` aparecer ali) — mais
+`bottom: var(--gutter)` quando `html.is-projeto-sem-galeria`, que soma
+um `padding-bottom` que a variante com galeria não tem.
 
 ```js
 const HUES = ['#EE7B85', '#E9D64A', '#7BC96F', '#7FB2E5', '#F2913F', '#B9A3E3'];
@@ -310,6 +335,61 @@ site). Se não agradar, é uma troca de uma linha no `@import` + três
   pular a contagem.
 - Sem grade de 12 colunas. Cada bloco é um grid de duas colunas: bloco e coluna vazia.
 - Espaço vertical entre blocos: `clamp(72px, 12vh, 160px)`.
+
+### Bloco de menu: último item do feed (V1.18.1.1)
+
+Pedido: "quando o usuário rola até o final do feed de PROJETOS, aparece
+como último bloco, os elementos do menu." Depois de todos os projetos,
+a home termina com um bloco fixo (não vem de `projetos.json`) com os
+mesmos quatro itens da nav principal — Projetos, Diretores, Quem
+somos, Contato — pensado desde o início com peso visual grande de
+título (`'wdth' 200, 'wght' 900`), não texto pequeno de rodapé; o
+tamanho exato mudou na V1.18.4 (ver bullet abaixo). Sem link "voltar"
+— pedido explícito ("tira o voltar do canto inferior direito do feed
+de PROJETOS"): só "Projetos" cumpre esse papel.
+
+**Escrito direto em `index.html`, dentro de `#conteudo`, não em
+`js/feed.js`.** `#conteudo` nasce com `.bloco-menu` como único filho;
+`js/feed.js` mudou de `innerHTML = html` (apagava qualquer conteúdo
+estático a cada render) pra `insertAdjacentHTML('afterbegin', html)`
+(insere os projetos ANTES do bloco estático, preservando-o como o
+último filho de verdade), e o guard de render mudou de "`#conteudo`
+vazio" (`!feed.children.length`) pra "`#conteudo` sem `.block`"
+(`!feed.querySelector('.block')`) — não nasce mais vazio. Mesma função
+serve `.galeria[data-diretor]` sem mudança de comportamento — esse
+alvo nasce vazio, então `afterbegin` é idêntico a `innerHTML` ali.
+`.feed`'s `gap`/`padding-bottom` (`var(--block-gap)` na home) dá o
+respiro antes e depois do bloco de graça, sem margin própria.
+
+**Reaproveita o sistema de painéis inteiro, zero duplicação:** "Quem
+somos"/"Contato" são `<a data-abre="...">`, mesmo atributo da nav —
+`js/panel.js` escuta o documento inteiro, não só `#menu`. "Diretores"
+é um `<button data-abre="menu">` (sem destino de navegação, só abre
+painel — mesmo raciocínio do `.menu-toggle` da nav de verdade) que
+abre `#menu` E expande o submenu Ricardo/Daniela automaticamente, via
+`js/footer-menu.js` (mesmo script que a V1.18 escreveu pro rodapé,
+reaproveitado aqui — nome do arquivo e classes `.rodape-projetos`/
+`.rodape-diretores` ficaram, por comodidade, mesmo os elementos não
+estando mais no rodapé). "Projetos" rola suave pro topo só quando já
+estamos na home (mesma checagem de `pathname` que o rodapé usava na
+V1.18); nas outras páginas navega normal.
+
+**Cada item é um `<h3>` (V1.18.3)** — antes, só `<li><a>`/`<li>
+<button>`, sem semântica de título nenhuma apesar do peso visual de
+título de projeto. `<li><h3><a>...</a></h3></li>` (mesmo padrão de
+`js/feed.js`, que envolve o link do título do projeto num `<h2
+class="title">`): o título do projeto na página é o `<h2>`; os itens
+deste bloco, um nível abaixo na hierarquia de heading da página, viram
+`<h3>`. CSS que estilizava `.bloco-menu li` diretamente passou a mirar
+`.bloco-menu h3` — puramente uma troca de seletor, nenhum valor mudou.
+
+**Tamanho igual ao do menu hambúrguer (V1.18.4)** — o bloco nasceu com
+`font-size: clamp(36px, 6vw, 84px)`, calibrado só pra ele; pedido
+explícito pra usar em vez disso o MESMO tamanho de `.panel--menu ul a`/
+`.menu-toggle` (`css/base.css`): `clamp(30px, 4vw, 52px)`,
+`line-height: .98` (era `1.05`). Não é "parecido" — é o mesmo clamp,
+copiado literal, pra garantir pixel a pixel igual em qualquer largura
+de viewport, não só coincidir num breakpoint específico.
 
 ### Tipos de mídia
 
@@ -1833,23 +1913,49 @@ ocupar a viewport inteira — não sobraria espaço pro rodapé mesmo se
 ele continuasse no HTML; a variante "com galeria" só perdeu o rodapé
 mesmo, sem nenhuma outra mudança de layout.
 
-**Conteúdo, em três linhas (V1.17.5 — era duas desde a V1.3.3, que
-tinha ido de três pra duas; um `<p>` por linha):**
+**Conteúdo, em duas colunas lado a lado + selo no canto (V1.18.2, ordem
+das colunas invertida da V1.18.1.1):**
 
-- `contato@vulpesfilmes.com` (link `mailto:`) ` © 2026`
-- `São Paulo/SP, Brasil`
-- `Atendendo o mundo todo`
+1. `.rodape-col` 1: `São Paulo/SP, Brasil` / `Atendendo o mundo todo`.
+2. `.rodape-col` 2: `Instagram` (`<p class="rodape-social">`) +
+   `contato@vulpesfilmes.com` (sem `© 2026` — o copyright saiu daqui).
+3. `.rodape-versao`, ancorado no canto inferior direito da caixa
+   inteira (`position: absolute`, independente das colunas): `© 2026
+   v1.18.2` — repete o número da versão do cabeçalho deste documento.
+   Escrito à mão, sem mecanismo automático nenhum; precisa ser
+   atualizado nas 4 páginas com rodapé toda vez que a versão mudar
+   (mesma disciplina manual do changelog).
 
-O copyright voltou a usar a entidade `&copy;` (`©`) — a V1.3.3 tinha
-trocado por `(C)` como texto, revertido na V1.3.4 — e perdeu o nome
-"vulpesfilmes" depois do ano (o logo já está fixo no canto da página o
-tempo todo; repetir o nome no rodapé virou redundante). E-mail e
-copyright dividem a primeira linha porque o link `mailto:` só envolve
-o e-mail — o resto da linha (` © 2026`) fica fora da tag `<a>`, em
-texto solto no mesmo `<p>`.
+**Histórico: V1.18 pôs os itens do menu (Projetos/Diretores/Quem
+somos/Contato) dentro do rodapé e tirou e-mail/copyright; V1.18.1.1
+reverteu os dois.** Pedido V1.18: "coloque no rodapé os itens do Menu"
+— lista sem `contato@vulpesfilmes.com © 2026`, confirmado que saía de
+vez. Pedido V1.18.1.1, com referência visual: "CRAVE O NOVO RODAPÉ",
+"2 linhas: LINHA 1 — Instagram / contato@vulpesfilmes.com © 2026;
+LINHA 2 — São Paulo/SP, Brasil / Atendendo o mundo todo" — e-mail/
+copyright de volta (ao lado de Instagram, não sozinhos), NENHUM item
+de menu dentro da caixa preta — os quatro viraram bloco próprio no fim
+do feed da home (`.bloco-menu`, ver seção 4). Rodapé, então, voltou a
+ser só contato + endereço, com a adição líquida de uma linha
+(Instagram) que não existia antes da V1.18. V1.18.2: "inverta as
+linhas do rodapé" (endereço passa a vir primeiro, Instagram+e-mail
+depois) + `© 2026` sai do meio do e-mail e ganha lugar próprio, fixo
+no canto da caixa, ao lado de um número de versão que não existia
+antes.
 
 Redes sociais (`vimeo / instagram / youtube`) **removidas do rodapé em
-V8** — continuam só no menu (`.panel--menu .social`), não duplicadas aqui.
+V8** — ficaram só no menu (`.panel--menu .social`) até a V1.18.1.1
+trazer Instagram de volta (ao lado do e-mail, não como item de menu);
+Vimeo e YouTube continuam só no menu.
+
+**Os itens do menu (Projetos/Diretores/Quem somos/Contato) NÃO estão
+mais no rodapé — viram bloco próprio no fim do feed da home.** Ver
+"Bloco de menu: último item do feed" na seção 4 — o mecanismo de abrir
+painéis (`data-abre`) e o script (`js/footer-menu.js`) são os mesmos
+da V1.18, só mudou ONDE na página os quatro itens aparecem, e o link
+"voltar" que existiu brevemente numa leva anterior foi removido a
+pedido explícito ("tira o voltar do canto inferior direito do feed de
+PROJETOS") — só "Projetos" cumpre esse papel agora.
 
 **Tipografia e cores:**
 
@@ -1933,6 +2039,16 @@ Abaixo dele:
 - Menu ocupa a altura inteira, não metade.
 - Considerar `wdth 175` nos títulos no celular. Em 200 as palavras quebram
   cedo demais numa tela de 380px e o título vira quatro linhas.
+- **Sem bounce lateral (V1.17.6)**: "a página, na versão mobile, parece
+  solta pros lados" — não era overflow de conteúdo real (nenhuma página
+  media `scrollWidth` maior que a viewport, conferido via Playwright em
+  todas as páginas); era o bounce elástico que Safari/Chrome mobile dão
+  ao arrastar a página além da borda, mesmo sem nada pra rolar de
+  verdade. `overscroll-behavior-x: none` em `html` E `body` (`css/
+  base.css`) mata esse bounce horizontal sem usar `overflow-x` (que não
+  pode subir de `body` pra `html`, senão quebra o `position: sticky` do
+  título — ver comentário "IMPORTANTE" logo ali; `overscroll-behavior`
+  é uma propriedade diferente, não tem esse efeito colateral).
 
 ---
 
@@ -1959,6 +2075,8 @@ Abaixo dele:
 │   ├── projeto.js        monta a página individual de projeto
 │   ├── panel.js          menu/quem-somos/contato: abrir, foco, inert
 │   │                       (não carregado em projeto.html desde V1.11)
+│   ├── footer-menu.js    itens do menu no rodapé: Projetos volta ao
+│   │                       topo, Diretores expande o submenu (V1.18)
 │   ├── idle-color.js     efeito de cor após 30s parado (V1.8)
 │   ├── video-modal.js    modal de vídeo (YouTube/Vimeo/mp4)
 │   ├── photo-modal.js    lightbox de fotos da galeria
@@ -1970,7 +2088,9 @@ Abaixo dele:
 │   ├── posters/
 │   ├── loops/
 │   ├── galeria/<slug>/   fotos da página de cada projeto
-│   └── time/             retratos dos diretores
+│   ├── time/             retratos dos diretores
+│   └── favicon-Vulpes.png   ícone da aba (V1.18.1.1, `<link rel="icon">`
+│                              nas 5 páginas — não existia até então)
 └── projetos.json       fonte única do conteúdo
 ```
 
@@ -4294,3 +4414,264 @@ fonte 2 pontos e coloque em bold. 3. Deixe a barra do rodapé preto.
   `#7BC96F`) — texto legível em cima do preto. Smoke test completo sem
   erro de console ou de rede genuíno além do ruído de terceiro já
   catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.17.6
+
+Pedido, sobre um screenshot da página PROJETO com galeria: "1. perceba
+que a cor azul não é aplicado de forma uniforme da pagina PROJETO com
+galeria. O cabeçalho e a entrada as galerias parecem mais claras.
+2. as páginas, quando na versão mobile, parece 'solta' para os lados.
+Deixe-a 'travada', sem possibilidade de scroll lateral."
+
+- **Causa raiz do item 1: grão só nas mídias.** A V1.17.4 deu grão +
+  P&B só pra `.media`/`.diretor-bio__foto`/`.projeto-video`/
+  `.galeria-fotos__item` — o `background` do `body`, que preenche
+  cabeçalho, margens e o vão entre vídeo e galeria em `projeto.html`,
+  ficou um `--hue` chapado ao lado da mídia texturizada e mais escura
+  (P&B + `multiply`). Mesma cor, mas o fundo liso parecia mais claro
+  por comparação — exatamente o que foi relatado. Fix: mesmo `--grain`
+  + `background-blend-mode: overlay` das mídias, somado ao `background`
+  de `html.is-overlay-open body` (`css/base.css`) — sem `mix-blend-
+  mode`, porque não tem nada atrás do `body` pra misturar contra.
+- **Causa raiz do item 2: bounce elástico, não overflow de conteúdo.**
+  Medido via Playwright em todas as páginas, viewport mobile: `document.
+  documentElement.scrollWidth` e `body.scrollWidth` sempre iguais a
+  `window.innerWidth` — nenhuma página tinha conteúdo mais largo que a
+  tela. A sensação de "solta pros lados" é o bounce elástico que
+  Safari/Chrome mobile dão ao arrastar além da borda mesmo sem nada pra
+  rolar. Fix: `overscroll-behavior-x: none` em `html` E `body` (`css/
+  base.css`) — deliberadamente NÃO usei `overflow-x` em `html` (só em
+  `body`, que já tinha desde sempre), porque o comentário "IMPORTANTE"
+  já existente no arquivo avisa que isso quebra o `position: sticky`
+  dos títulos; `overscroll-behavior` é uma propriedade diferente, sem
+  esse efeito colateral.
+- Verificado via Playwright: `background-blend-mode` do `body` sob
+  `.is-overlay-open` confirmado `overlay`; captura de tela de
+  `projeto.html` com o efeito ativado (via `page.clock.fastForward`,
+  simulando os 30s de inatividade) mostra cabeçalho, margens, vídeo e
+  galeria todos com a mesma textura de grão — antes só o vídeo e as
+  fotos da galeria tinham. `overscroll-behavior-x` confirmado `none`
+  em `html` e `body`. Testado que `position: sticky` dos títulos
+  continua funcionando (comparado output antes/depois da mudança,
+  idêntico — a pequena variação observada em ambos os casos é
+  pré-existente, ligada ao `scroll-behavior: smooth`, não uma
+  regressão). Smoke test completo sem erro de console ou de rede
+  genuíno além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).
+
+### 1.17.7
+
+Pedido, sobre um novo screenshot da página PROJETO com galeria depois
+da V1.17.6: "ainda está errado veja que as barras ao lado do vídeo são
+mais escuras que o barrado e as linhas da galeria."
+
+- **Causa raiz: overlay de `.projeto-video` cobrindo o próprio padding,
+  não só o vídeo.** `.diretor-bio__foto` e `.galeria-fotos__item` (os
+  outros dois containers de mídia com overlay) não têm padding próprio
+  — a caixa inteira É a mídia, então `::after { inset: 0 }` sempre
+  cobriu exatamente a mídia, nunca mais que isso. `.projeto-video` é
+  diferente: tem `padding-inline: var(--gutter)` (e `padding-bottom`
+  extra na variante sem galeria), então o MESMO `inset: 0` cobria a
+  caixa inteira, padding incluso — a V1.17.6, ao somar grão+`--hue` no
+  `body`, sem querer criou uma faixa onde DOIS `multiply` se empilhavam
+  (o do `body` por baixo, o do `.projeto-video::after` por cima, cobrindo
+  um respiro sem imagem nenhuma ali), mais escura que qualquer lugar com
+  um `multiply` só — exatamente o oposto do que a V1.17.6 tentou
+  resolver, só que dessa vez isolado em `.projeto-video`.
+- Fix: `.projeto-video::after { inset: 0 var(--gutter); }` — exclui da
+  área tingida a faixa lateral de padding, mesma largura do padding
+  real, então só a camada única do `body` aparece ali (igual ao
+  cabeçalho, igual ao vão entre fotos da galeria). `html.is-projeto-
+  sem-galeria .projeto-video::after { bottom: var(--gutter); }` cobre o
+  caso extra dessa variante, que também tem `padding-bottom`.
+- Verificado via Playwright: screenshot de `projeto.html` com e sem
+  galeria, efeito de cor ativado via `page.clock.fastForward` (30s de
+  inatividade) — cabeçalho, respiro lateral do vídeo, vídeo em si e
+  vão/fotos da galeria todos com a mesma intensidade de cor agora,
+  nenhuma faixa mais escura. Estado base (sem o efeito) conferido sem
+  nenhuma mudança visual — `inset` só importa com `opacity: 1`. Smoke
+  test completo sem erro de console ou de rede genuíno além do ruído
+  de terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18
+
+Pedido: "Coloque no rodapé os itens do Menu. Fica assim: Projetos (Ao
+clicar, volta a página pra cima) / Diretores / Quem somos / Contato /
+Instagram / São Paulo/SP, Brasil / Atendendo o mundo todo." A lista não
+incluía `contato@vulpesfilmes.com © 2026` (as duas linhas do topo até
+então) — perguntado se saía ou só não tinha sido repetida; confirmado
+que sai. Perguntado também o que "Diretores" deveria abrir no rodapé
+(sem submenu próprio ali); confirmado: o mesmo painel de menu, com o
+submenu Ricardo/Daniela já expandido.
+
+- **E-mail e copyright saíram do rodapé, sem substituto.** O link de
+  e-mail continua existindo só no card "Contato" (`.contact-card__item`).
+- **Quatro páginas (`index.html`, `ricardo-rapozo.html`, `daniela-
+  luquini.html`, `time.html`) ganharam `<nav class="rodape-menu">`** no
+  rodapé com os mesmos quatro itens da nav principal, mais `<p
+  class="rodape-social">` (Instagram) — três grupos com respiro entre
+  si, igual à formatação do pedido.
+- **Quem somos/Contato reaproveitam `[data-abre]` de graça** — mesmo
+  atributo dos links da nav, e `js/panel.js` já escuta o documento
+  inteiro, não só `#menu`. Zero JS novo pra esses dois.
+- **Diretores é `<button data-abre="menu">`, não link** (sem destino de
+  navegação, só abre painel — mesmo raciocínio do `.menu-toggle` da nav
+  de verdade). Abre o painel via `data-abre` (genérico, já existia); um
+  script novo, `js/footer-menu.js` (carregado logo depois de `js/
+  panel.js` no HTML — ORDEM importa, os dois escutam o mesmo clique no
+  mesmo elemento, e o segundo depende do painel já estar aberto pelo
+  primeiro), simula um clique em `.menu-toggle` logo em seguida, pra
+  expandir o submenu Ricardo/Daniela sem precisar de um segundo clique
+  manual do usuário.
+- **Projetos volta ao topo quando já estamos na home**, em vez de
+  recarregar a página à toa — `js/footer-menu.js` compara o `pathname`
+  resolvido do link com o da página atual (removendo um `index.html`
+  final de ambos, pra "/" e "/index.html" contarem como o mesmo
+  endereço) e só intercepta quando são o mesmo lugar, chamando
+  `window.scrollTo({ top:0, behavior:'smooth' })`. Nas outras 3
+  páginas, o link se comporta normal — navega pra home.
+- **Instagram**: mesmo placeholder do menu (`href="#"`).
+- Sem o sublinhado animado da nav — usa o hover simples que o resto do
+  rodapé já tinha (`footer a:hover`), extendido pra cobrir o `<button>`
+  também (que não é `<a>`, não herdava a regra de graça).
+- Verificado via Playwright: clique em "Diretores" no rodapé confirmado
+  abrindo `#menu` (`classList` com `is-open`) E expandindo o submenu
+  (`.menu-toggle[aria-expanded="true"]`, `#submenu-diretores` não mais
+  `hidden`) — revisão visual por screenshot mostra o painel com Ricardo
+  Rapozo/Daniela Luquini já visíveis. "Quem somos"/"Contato" confirmados
+  abrindo seus painéis (`classList` com `is-open`). "Projetos" testado
+  nas duas situações: a partir de `ricardo-rapozo.html`, navega pra `/`
+  normalmente; a partir da própria home, rolada até 2000px, o clique
+  devolve `scrollY` a `0` (com espera suficiente pro `scroll-behavior:
+  smooth` terminar). Hover do botão "Diretores" confirmado com
+  `text-decoration-line: underline`. Layout mobile (390px) conferido
+  sem overflow. Smoke test completo sem erro de console ou de rede
+  genuíno além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).
+
+### 1.18.1.1
+
+Pedido: "1. Adicione o favicon (faviconVulpes.png) a pagina. 2. Veja a
+referência enviada e CRAVE O NOVO RODAPÉ: 2 linhas — LINHA 1 (Instagram,
+contato@vulpesfilmes.com © 2026), LINHA 2 (São Paulo/SP, Brasil,
+Atendendo o mundo todo). 3. Quando o usuário rola até o final do feed
+de PROJETOS, aparece como último bloco os elementos do menu: Projetos
+(ao clicar volta ao topo), Diretores (abre o submenu), Quem Somos
+(abre card), Contato (abre card). 4. Tira o voltar do canto inferior
+direito do feed de PROJETOS." — mesmo pedido de uma leva anterior
+(chamada 1.18.1 nesta conversa, revertida por completo antes de
+começar esta), com uma diferença explícita no item 4: sem link
+"voltar" dessa vez.
+
+- **Favicon**: `media/favicon-Vulpes.png` — `<link rel="icon"
+  type="image/png" href="media/favicon-Vulpes.png">` nas 5 páginas.
+- **Rodapé volta a duas colunas, e-mail/copyright de volta**: a V1.18
+  tinha tirado `contato@vulpesfilmes.com © 2026` e posto os quatro
+  itens de menu no lugar — revertido pela referência visual. Layout:
+  `footer.footer-invertido { display:flex }`, duas `.rodape-col` lado
+  a lado — col 1 (Instagram + e-mail/copyright), col 2 (endereço, duas
+  linhas). `row-gap`/`column-gap` separados (24px/60px) — no mobile, a
+  coluna empilha e não precisa do mesmo respiro vertical que o
+  horizontal.
+- **Itens do menu saem do rodapé, viram `.bloco-menu`: último item do
+  feed da home.** Ver seção 4, "Bloco de menu: último item do feed" —
+  mesmo mecanismo da leva anterior (escrito em `index.html`, `js/
+  feed.js` com `insertAdjacentHTML('afterbegin', ...)` em vez de
+  `innerHTML`, guard trocado pra `!feed.querySelector('.block')`,
+  reaproveita `data-abre`/`.menu-toggle`/`js/footer-menu.js` da V1.18
+  quase sem mudança).
+- **Sem link "voltar" desta vez** — pedido explícito: "tira o voltar
+  do canto inferior direito do feed de PROJETOS." Diferença central
+  em relação à leva anterior (revertida): o bloco tem só os quatro
+  itens de menu, "Projetos" sozinho cumprindo o papel de "rolar pro
+  topo".
+- Verificado via Playwright: `.bloco-menu` confirmado como último
+  filho de `#conteudo`; nenhum elemento `.bloco-menu-voltar` presente;
+  clique em "Projetos" leva `scrollY` a `0`; "Diretores" confirmado
+  abrindo `#menu` com o submenu expandido; "Quem somos"/"Contato"
+  confirmados abrindo os painéis certos; `<link rel="icon">`
+  confirmado presente. Revisão visual por screenshot comparada com a
+  referência enviada — mesmo peso tipográfico do bloco, mesmo layout
+  de duas colunas no rodapé, sem "voltar". Layout mobile (390px)
+  conferido. Smoke test completo sem erro de console ou de rede
+  genuíno além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).
+
+### 1.18.2
+
+Pedido: "inverta as linhas do rodapé, fica: LINHA 1 — São Paulo/SP,
+Brasil / Atendendo o mundo todo; LINHA 2 — Instagram / contato@
+vulpesfilmes.com. No canto inferior direito do rodapé: © 2026
+v.[aqui a versão da página que está rodando]."
+
+- **Colunas do rodapé trocam de ordem**: endereço (`São Paulo/SP,
+  Brasil` / `Atendendo o mundo todo`) passa a ser a primeira coluna;
+  Instagram + e-mail passam a ser a segunda — inverso da V1.18.1.1.
+- **`© 2026` sai do fim do e-mail e ganha elemento próprio, fixo no
+  canto inferior direito do rodapé** — `<p class="rodape-versao">© 2026
+  v1.18.2</p>`, `position: absolute; right:0; bottom:0` dentro de
+  `footer.footer-invertido` (que ganhou `position: relative` só pra
+  isso). Ancorado no canto da CAIXA, não das colunas — fica no lugar
+  certo mesmo quando as colunas empilham no mobile (`flex-wrap: wrap`
+  as faz virar duas linhas, mas o selo de versão continua isolado no
+  canto). `margin: 0` sobrescrevendo `footer p { margin: 0 0 8px 0 }`,
+  senão a margem padrão desalinharia o canto exato.
+- **Número da versão escrito à mão, sem mecanismo automático** — o
+  site não tem build nem template engine, então não existe uma única
+  fonte de verdade que o HTML possa ler em tempo de execução; repete o
+  número do cabeçalho do PROJETO.md, atualizado junto com ele nas 4
+  páginas com rodapé, mesma disciplina manual já usada pro changelog.
+- Verificado via Playwright: ordem das colunas confirmada (endereço
+  primeiro); link de e-mail confirmado sem `© 2026` no texto
+  (`textContent` = só o endereço); `.rodape-versao` confirmado sem
+  sobreposição com as colunas no mobile (gap de ~4px entre o fim da
+  segunda coluna e o início do selo, medido via `getBoundingClientRect`)
+  e dentro dos limites visuais do `<footer>` (bottom do selo == bottom
+  do footer, não vaza pra fora da caixa preta). Revisão visual por
+  screenshot em desktop e mobile. Smoke test completo sem erro de
+  console ou de rede genuíno além do ruído de terceiro já catalogado
+  (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.3
+
+Pedido: "atualmente estamos usando H1 nos elementos do MENU que estão
+ao final do feed de PROJETOS. Use H3."
+
+- **Os quatro itens do `.bloco-menu` (Projetos/Diretores/Quem somos/
+  Contato) ganharam `<h3>` cada, dentro do `<li>`** —
+  `<li><h3><a>...</a></h3></li>` (ou `<button>` no caso de
+  "Diretores"). Mesmo padrão já usado em `js/feed.js` pro título de
+  projeto (`<h2 class="title"><a>...</a></h2>`): lá o `<h2>` é o
+  título da página de projeto; aqui, um nível abaixo na hierarquia, os
+  itens do menu viram `<h3>`.
+- CSS que mirava `.bloco-menu li` diretamente passou a mirar
+  `.bloco-menu h3` — troca de seletor só, nenhum valor de `font-size`/
+  `font-variation-settings`/`line-height` mudou.
+- Verificado via Playwright: `document.querySelectorAll('.bloco-menu
+  h3')` confirmado retornando os quatro itens, com o texto certo;
+  clique em "Quem somos" (agora dentro do `<h3>`) confirmado ainda
+  abrindo o painel — nenhuma interação quebrou com a mudança de
+  marcação. Revisão visual por screenshot: pixel a pixel igual à
+  V1.18.2 (mudança é só semântica, sem efeito no CSS computado). Smoke
+  test completo sem erro de console ou de rede genuíno além do ruído
+  de terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.4
+
+Pedido: "diminua o tamanho da fonte dos elementos do MENU que estão no
+final do feed de PROJETOS. Deixe do mesmo tamanho dos itens do MENU
+hambúrguer." Antes de patchear, o usuário perguntou o tamanho atual —
+respondido `clamp(36px, 6vw, 84px)` — e só depois pediu a redução.
+
+- **`.bloco-menu h3` troca `clamp(36px, 6vw, 84px)` / `line-height:
+  1.05` por `clamp(30px, 4vw, 52px)` / `line-height: .98`** — o MESMO
+  clamp de `.panel--menu ul a` e `.menu-toggle` (`css/base.css`), não
+  um valor só parecido. Copiado literal pra garantir pixel a pixel
+  igual em qualquer largura de viewport (um valor "parecido" poderia
+  coincidir num breakpoint e divergir em outro).
+- Verificado via Playwright: `getComputedStyle` do `.bloco-menu h3` e
+  de `.panel--menu ul a` confirmados retornando o mesmo `font-size`
+  (`52px` na viewport de teste, 1600px). Revisão visual por screenshot
+  confirma a fonte visivelmente menor, sem quebra de layout. Smoke
+  test completo sem erro de console ou de rede genuíno além do ruído
+  de terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).

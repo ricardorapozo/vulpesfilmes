@@ -42,7 +42,16 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+/* V1.17.6: "a página, na versão mobile, parece 'solta' pros lados" —
+   não é overflow de conteúdo (nenhuma página mede `scrollWidth` maior
+   que a viewport, conferido via Playwright); é o bounce elástico que
+   Safari/Chrome mobile dão ao arrastar a página além da borda, mesmo
+   sem nada pra rolar. `overscroll-behavior-x` mata só esse bounce
+   horizontal, sem mexer em `overflow` — não esbarra no aviso abaixo
+   (`overflow-x` não pode subir de `body`, `overscroll-behavior` pode,
+   são propriedades diferentes, uma não quebra o `position: sticky` do
+   título que a outra quebraria). */
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overscroll-behavior-x: none; }
 
 /* V1.17.2: `body` vira coluna flex de altura mínima igual à viewport —
    junto com `.feed { flex: 1 }` (layout.css), é o que gruda o rodapé no
@@ -72,6 +81,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
   transition: background-color var(--t-panel) var(--ease-out);
   -webkit-font-smoothing: antialiased;
 }
@@ -79,8 +89,23 @@ body {
 /* IMPORTANTE: overflow-x fica no body, nunca num ancestral de .title,
    senão o position:sticky do título morre sem aviso. */
 
+/* V1.17.6: "a cor azul não é aplicada de forma uniforme" — a V1.17.4
+   deu grão + P&B só pras MÍDIAS (`.media`/`.diretor-bio__foto`/
+   `.projeto-video`/`.galeria-fotos__item`, `css/layout.css`); o fundo
+   do `body`, que preenche o resto da página (cabeçalho, margens, vão
+   entre vídeo e galeria em `projeto.html`), continuou um `--hue` chapado
+   — ao lado da mídia granulada e escurecida, esse fundo liso parecia
+   mais claro/fraco por comparação, mesma cor mas sem a textura. Mesmo
+   `--grain` (`tokens.css`) e mesmo `background-blend-mode: overlay`
+   somados aqui, pro fundo ficar consistente com a mídia. Sem `mix-
+   blend-mode` (não tem nada por baixo do `body` pra misturar contra). */
 .is-overlay-open body,
-html.is-overlay-open body { background: var(--hue); }
+html.is-overlay-open body {
+  background-color: var(--hue);
+  background-image: var(--grain);
+  background-size: 200px 200px;
+  background-blend-mode: overlay;
+}
 
 html.is-overlay-open { overflow: hidden; }
 
@@ -707,10 +732,53 @@ footer p {
    `var(--ink)` (preto, como era antes da V1.17.3); quem passa a usar
    `var(--hue)` agora é o TEXTO, não o fundo — troca completa de qual
    dos dois carrega a cor da sessão. `a { color: inherit }` (topo deste
-   arquivo) resolve o link do e-mail sozinho, sem seletor próprio. */
+   arquivo) resolve o link do e-mail sozinho, sem seletor próprio.
+
+   V1.18.1.1: rodapé volta a DUAS COLUNAS lado a lado (`display:flex`).
+   V1.18 tinha posto os quatro itens do menu (Projetos/Diretores/Quem
+   somos/Contato) dentro do rodapé, como lista. Pedido com referência
+   visual: não é isso — os itens do menu saem do rodapé de vez (viram
+   bloco próprio no fim do feed da home, ver `.bloco-menu` em
+   `layout.css`) e o rodapé volta a ter e-mail + copyright, com
+   Instagram do lado do e-mail, e as duas colunas (`.rodape-col`, só
+   um agrupador de `<p>` — sem herdar `footer p` nada demais) lado a
+   lado, não empilhadas. `row-gap`/`column-gap` separados, não `gap`
+   sozinho: no mobile (`flex-wrap: wrap` empilha as colunas), 60px de
+   respiro VERTICAL entre elas ficava exagerado — só o respiro
+   HORIZONTAL (entre colunas lado a lado) precisa ser grande.
+
+   V1.18.2: "inverta as linhas do rodapé" — col 1 vira endereço (São
+   Paulo/SP, Brasil / Atendendo o mundo todo), col 2 vira Instagram +
+   e-mail (sem `© 2026` — o copyright saiu daqui, ver `.rodape-versao`
+   abaixo). `position: relative` porque `.rodape-versao` é `position:
+   absolute` e precisa de um ancestral posicionado pra ancorar no
+   canto do PRÓPRIO rodapé, não da página inteira. */
 footer.footer-invertido {
   background: var(--ink);
   color: var(--hue);
+  display: flex;
+  row-gap: 24px;
+  column-gap: 60px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+/* "No canto inferior direito do rodapé: © 2026 v.[versão]" — ancorado
+   no canto de `footer` (acima, `position: relative`), não flui junto
+   com as colunas; assim fica preso ao canto de verdade da caixa preta
+   mesmo quando as colunas empilham no mobile (`flex-wrap: wrap`).
+   `margin: 0` sobrescrevendo `footer p { margin: 0 0 8px 0 }` — um
+   `<p>` com margem própria não ficaria colado no canto exato.
+   Versão escrita à mão, sem nenhum mecanismo automático: repete o
+   número do cabeçalho do PROJETO.md (seção "Versão") — precisa ser
+   atualizada nas 4 páginas com rodapé toda vez que a versão mudar,
+   mesma disciplina manual já usada pro changelog. */
+.rodape-versao {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  font-size: 13px;
 }
 
 footer a {

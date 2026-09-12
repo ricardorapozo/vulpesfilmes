@@ -187,6 +187,27 @@ html.is-overlay-open .galeria-fotos__item::after {
   opacity: 1;
 }
 
+/* V1.17.7: "as barras ao lado do vídeo são mais escuras que o
+   cabeçalho e as linhas da galeria" — `.projeto-video` (diferente de
+   `.diretor-bio__foto`/`.galeria-fotos__item`, que não têm padding
+   próprio) tem `padding-inline: var(--gutter)` (mais `padding-bottom`
+   extra quando `is-projeto-sem-galeria`, ver abaixo); como o `::after`
+   usava `inset: 0`, ele cobria a caixa INTEIRA, inclusive esse
+   padding — então a faixa de respiro ao lado do vídeo recebia DOIS
+   `multiply` empilhados (o do `body`, por baixo, mais o do próprio
+   `.projeto-video::after`, por cima, sem nenhuma imagem ali pra
+   justificar), ficando mais escura que áreas com um `multiply` só
+   (cabeçalho, vão entre linhas da galeria). Fix: inset lateral igual
+   ao padding, pra o overlay parar exatamente na borda do vídeo — só
+   `--grain`+`--hue` do `body` (uma camada) aparece no respiro. */
+.projeto-video::after {
+  inset: 0 var(--gutter);
+}
+
+html.is-projeto-sem-galeria .projeto-video::after {
+  bottom: var(--gutter);
+}
+
 /* ---------- alvo de clique pro vídeo real (V8: sem ícone) ----------
    A galeria de fotos passou a viver só na página do projeto (título é o
    único link pra lá — o ícone ao lado do bloco foi removido). Aqui, quando
@@ -848,6 +869,65 @@ html.is-projeto-sem-galeria .projeto-video video {
   height: 100%;
   object-fit: cover;
   cursor: pointer;
+}
+
+/* ---------- bloco de menu: último bloco do feed da home (V1.18.1.1) ----------
+   Pedido: "quando o usuário rola até o final do feed de PROJETOS,
+   aparece como último bloco os elementos do menu" — os mesmos quatro
+   itens da nav (Projetos/Diretores/Quem somos/Contato) que a V1.18
+   tinha posto no rodapé (revertido pra V1.18.1.1, ver `css/base.css`)
+   viram o último item de `.feed` na home, com o mesmo peso visual de
+   um título de projeto — não texto pequeno de rodapé. Sem link
+   "voltar" (pedido explícito: "tira o voltar do canto inferior
+   direito do feed de PROJETOS" — só "Projetos" cumpre esse papel,
+   rolando pro topo). Escrito direto em `index.html`, dentro de
+   `#conteudo`; `js/feed.js` insere os projetos ANTES dele
+   (`insertAdjacentHTML('afterbegin')`), não sobrescreve mais com
+   `innerHTML`, então ele sempre sobra como o filho final de verdade —
+   o `gap`/`padding-bottom` de `.feed` (`var(--block-gap)` na home) já
+   dá o respiro antes e depois dele de graça, sem margin própria. */
+.bloco-menu {
+  padding-inline: var(--gutter);
+}
+
+.bloco-menu ul {
+  list-style: none;
+}
+
+/* V1.18.3: "estamos usando H1 nos elementos do menu... use H3" — os
+   quatro itens (Projetos/Diretores/Quem somos/Contato) ganharam um
+   `<h3>` cada, dentro do próprio `<li>` (mesmo padrão de `js/feed.js`,
+   que envolve o link do título do projeto num `<h2 class="title">` —
+   aqui é `<h3>` porque esse título de projeto já é o `<h2>` da página;
+   os itens do menu, um nível abaixo na hierarquia, ficam em `<h3>`).
+   Reset do `<h3>` (peso/margem do user-agent) não precisou de regra
+   própria — `* { margin: 0 }` (topo de `base.css`) e `font-variation-
+   settings`/`font-size` explícitos aqui já cobrem os dois. */
+/* V1.18.4: "diminua o tamanho... deixe do mesmo tamanho dos itens do
+   MENU hambúrguer" — `clamp(36px, 6vw, 84px)` (calibrado só pra este
+   bloco) trocado pelo MESMO clamp de `.panel--menu ul a`/`.menu-
+   toggle` (`css/base.css`), pra bater exatamente com o menu de
+   verdade, não só "parecido". */
+.bloco-menu h3 {
+  font-variation-settings: 'wdth' 200, 'wght' 900;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: .98;
+  letter-spacing: -.01em;
+}
+
+.bloco-menu a,
+.bloco-menu button {
+  display: inline-block;
+}
+
+.bloco-menu a:hover,
+.bloco-menu a:focus-visible,
+.bloco-menu button:hover,
+.bloco-menu button:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: .05em;
+  text-decoration-skip-ink: none;
 }
 
 /* ---------- responsivo ---------- */
