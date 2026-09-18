@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.18.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.19.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2426,6 +2426,12 @@ demais páginas e no `og:site_name`. Mesma lógica da divergência acima:
 a aba diz onde a pessoa está (Projetos) e de que site é; o card de
 compartilhamento só traz o nome da marca. As outras páginas mantêm
 `"<título> — vulpesfilmes"` no `<title>`.
+
+**Páginas dos diretores (V1.18.19): `og:title`/`twitter:title`
+`"Vulpes Filmes"`**, igual à home — o card de compartilhamento de
+`ricardo-rapozo.html`/`daniela-luquini.html` mostra a marca, não o nome
+da pessoa. O `<title>` da aba continua `"<Nome> — vulpesfilmes"`.
+`time.html` ainda usa `"Nosso time — vulpesfilmes"` nos dois.
 
 **Imagem do card, em cascata (V1.18.9, depois de ver um card de
 verdade no WhatsApp):** poster do projeto → primeira foto da galeria
@@ -5326,3 +5332,19 @@ Filmes'. O OG Title deve ser 'Vulpes Filmes'."
   — vulpesfilmes"` e `og:title` próprios; `og:site_name` continua
   `"vulpesfilmes"`. Nenhum JS reescreve o `<title>` da home
   (`document.title` só existe em `js/projeto.js`).
+
+### 1.18.19
+
+Pedido: "o 'og:title' dos diretores está desatualizado. Deve ser 'Vulpes
+Filmes'."
+
+- `ricardo-rapozo.html` e `daniela-luquini.html`: `og:title` `"<Nome> —
+  vulpesfilmes"` → `"Vulpes Filmes"`. Era um resto: a V1.18.18 só
+  ajustou a home, e essas duas páginas ficaram com o padrão antigo.
+- **`twitter:title` também** (não pedido explicitamente — mesmo motivo
+  da V1.18.18: os dois andam juntos, senão o card do X diverge do de
+  WhatsApp/Facebook). `<title>` da aba inalterado.
+- **`time.html` NÃO foi mexida** — não é página de diretor e o pedido
+  não a citou; segue com `"Nosso time — vulpesfilmes"` em `og:title`/
+  `twitter:title`. Se a intenção era padronizar todas as páginas fixas,
+  é uma linha por página.
