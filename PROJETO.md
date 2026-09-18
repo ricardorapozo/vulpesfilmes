@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.16.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.17.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1961,10 +1961,11 @@ canto inferior direito, sangrando um pouco pra fora da viewport**
 (`right: -24px; bottom: -24px`) — mesmo efeito da referência, onde a
 imagem aparece cortada nas bordas direita e inferior, não contida
 inteira dentro do quadro. Tamanho
-foi 3x, depois 2.5x (V1.18.13/V1.18.14) e **voltou ao original na
-V1.18.16** ("retire o scale de 2.5x"): `width: clamp(280px, 36vw,
-480px)` no desktop, `clamp(220px, 62vw, 360px)` no mobile (breakpoint
-de sempre, 820px). `<img>` é deliberadamente o ÚLTIMO elemento do
+foi 3x, depois 2.5x (V1.18.13/V1.18.14), voltou ao original na
+V1.18.16 e **hoje é o tamanho natural do JPEG (V1.18.17)**: `width:
+min(1282px, 90vw)` no desktop, `100vw` no mobile (breakpoint de sempre,
+820px; `img { max-width: 100% }` do `base.css` sempre limitou a
+raposa à viewport, então é isso mesmo que ela ocupa ali). `<img>` é deliberadamente o ÚLTIMO elemento do
 `<body>` (depois de `.logo`, burger, `main.erro-404`, menu, painéis e
 `panel.js`) — pedido explícito de posição na hierarquia do DOM.
 Com um painel aberto (`is-overlay-open`, fundo vira `--hue`), a
@@ -5279,3 +5280,25 @@ Pedido: "1. retire o scale de 2.5x aplicado a imagem
   patch (641×428 → 1282×856, ~33KB → ~56KB, JPEG válido): mesma imagem
   em 2x, então fica nítida em telas retina agora que ela voltou a ser
   exibida pequena (480px de largura no máximo). Incluído no commit.
+
+### 1.18.17
+
+Pedido: "a raposinha no 404 está muito pequena, o que houve?" — e,
+perguntado qual tamanho queria, "Tamanho natural do JPEG (1282px)".
+
+- **O que houve**: na V1.18.16 o pedido "retire o scale de 2.5x" foi lido
+  como "desfaça o aumento" e a raposinha voltou ao `clamp(280px, 36vw,
+  480px)` original da V1.18.12 (o menor tamanho de todos). O JPEG tinha
+  sido reexportado em 1282×856 no mesmo patch — sinal de que a intenção
+  era outra (mostrar o arquivo sem redimensionar), que passou batido.
+- **`width: min(1282px, 90vw)`** no desktop: tamanho natural do arquivo
+  (1282px) em telas largas; abaixo de ~1424px de viewport vira 90vw.
+- **Mobile: `width: 100vw`**. O `clamp(550px, 155vw, 900px)` das
+  V1.18.13-15 nunca passava disso: `img { max-width: 100% }` (`base.css`)
+  limita a `<img>` fixed à viewport — a 390px a raposa media 390px, não
+  604px. Declarado direto pra o código dizer o que realmente acontece;
+  visual do mobile inalterado.
+- Verificado via Playwright: 1920px e 1440px → raposa com 1282px
+  (= `naturalWidth`); 837px → 753px (90vw); 390px → 390px; sem overflow
+  horizontal em nenhum; `<img>` continua `body.lastElementChild`; texto
+  ("404", parágrafo, "voltar") segue por cima da imagem (V1.18.15).
