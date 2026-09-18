@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.11.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.12.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1909,6 +1909,57 @@ calc(var(--gutter) * 1.4)`. Fica registrado que o tamanho menor já foi
 tentado e rejeitado, pra não repetir a mesma tentativa sem necessidade
 num patch futuro.
 
+### Página 404 (V1.18.12)
+
+Até aqui, um link quebrado caía no 404 genérico da própria plataforma
+de deploy (Cloudflare Pages) — nenhum arquivo do site cuidava disso.
+Pedido: "vamos melhorar a página 404?? Use a imagem
+'/media/raposinhaRagdoll.jpg', coloque ela presa no canto inferior
+[direito, pela referência visual enviada — o texto do pedido dizia
+'esquerdo', mas a imagem de referência mostrava claramente o canto
+inferior DIREITO; seguida a referência, "CRAVE NA REF" era a instrução
+explícita]. E CRAVE NA REF."
+
+**`404.html` na raiz — convenção padrão do Cloudflare Pages**: quando
+esse arquivo existe, qualquer requisição sem asset correspondente
+passa a receber ELE, com status `404` de verdade (confirmado via
+`wrangler pages dev` — antes deste arquivo existir, uma rota
+inexistente caía no fallback padrão da plataforma, servindo
+`index.html` com `200`, comportamento de SPA; depois, `404 Not Found`
+de verdade com o conteúdo de `404.html`). Efeito colateral bom, não
+buscado de propósito: a verificação de existência de imagem em
+`functions/_middleware.js` (V1.18.8/V1.18.9, `posterRes.ok` +
+`Content-Type`) fica ainda mais correta — antes dependia só do
+`Content-Type` pra saber que um caminho não existia (porque `.ok`
+sempre vinha `true` no fallback de SPA); agora `.ok` sozinho já
+resolveria, o `Content-Type` virou uma segunda camada de segurança,
+não a única.
+
+**Layout próprio (`css/404.css`), não reaproveita `css/layout.css`**
+— feed/blocos de projeto não fazem sentido numa página de erro. Só
+`tokens.css` (cor/tipografia/`--gutter`) e `base.css` (reset, `.logo`,
+fonte) entram — os mesmos dois arquivos que todo o resto do site já
+carrega, sem duplicar reset nem import de fonte. Página deliberadamente
+enxuta: sem hambúrguer, sem menu, sem painéis, sem efeito de cor —
+fim de linha, o único jeito de sair dela é o "voltar" (mesmo padrão
+visual de sublinhado animado usado em `.diretor-voltar a`/`.projeto-
+voltar`, reescrito aqui pra não precisar importar `layout.css` só por
+essa regra). `.logo` (topo esquerdo, "vulpesfilmes") continua
+presente — não aparecia na referência visual do pedido, mas é o único
+elemento de chrome fixo em TODAS as outras páginas do site sem
+exceção; tirar dele especificamente pareceria uma omissão, não uma
+escolha.
+
+**A raposinha de crochê (`media/raposinhaRagdoll.jpg`, fundo branco
+que já bate com o `--paper` do site) fica `position: fixed`, presa no
+canto inferior direito, sangrando um pouco pra fora da viewport**
+(`right: -24px; bottom: -24px`) — mesmo efeito da referência, onde a
+imagem aparece cortada nas bordas direita e inferior, não contida
+inteira dentro do quadro. `width: clamp(280px, 36vw, 480px)` no
+desktop, menor no mobile (`clamp(220px, 62vw, 360px)`, breakpoint de
+sempre, 820px) — a foto é pequena (640×427), não escala além do
+razoável pra não borrar.
+
 ---
 
 ## 7. Vídeo
@@ -2129,6 +2180,9 @@ Abaixo dele:
 ├── projeto.html                template único de projeto (?slug=)
 ├── ricardo-rapozo.html, daniela-luquini.html   páginas de diretor
 ├── time.html                   quadro executivo (sem galeria)
+├── 404.html                    página de erro (V1.18.12) — servida
+│                                 automaticamente pelo Cloudflare Pages
+│                                 pra qualquer rota sem asset correspondente
 ├── functions/
 │   └── _middleware.js   Cloudflare Pages Function (V1.18.8) — reescreve
 │                          og:*/twitter:*/<title> de /projeto?slug=X na
@@ -2138,7 +2192,10 @@ Abaixo dele:
 ├── css/
 │   ├── tokens.css      cores, tipografia, espaçamento
 │   ├── base.css        reset, fonte, painéis, modais, rodapé
-│   └── layout.css      blocos, alternância, carrossel, galeria de fotos
+│   ├── layout.css      blocos, alternância, carrossel, galeria de fotos
+│   └── 404.css         layout próprio da página de erro (V1.18.12) —
+│                          não entra em layout.css, feed/blocos não
+│                          fazem sentido numa página de erro
 ├── js/
 │   ├── hue.js            sorteio da cor + sessionStorage
 │   ├── helpers.js        escapar()/midiaHTML(), compartilhado
@@ -2168,8 +2225,10 @@ Abaixo dele:
 │   ├── loops/
 │   ├── galeria/<slug>/   fotos da página de cada projeto
 │   ├── time/             retratos dos diretores
-│   └── favicon-Vulpes.png   ícone da aba (V1.18.1.1, `<link rel="icon">`
-│                              nas 5 páginas — não existia até então)
+│   ├── favicon-Vulpes.png   ícone da aba (V1.18.1.1, `<link rel="icon">`
+│   │                          nas 5 páginas — não existia até então)
+│   └── raposinhaRagdoll.jpg   foto da página 404 (V1.18.12), fundo
+│                                branco de propósito (bate com --paper)
 └── projetos.json       fonte única do conteúdo
 ```
 
@@ -5035,3 +5094,54 @@ aquele 'vulpesfilmes' no final do título do card?"
   completo (site estático, sem a function) sem erro de console ou de
   rede genuíno além do ruído de terceiro já catalogado (Vimeo, em
   `global-renewable-alliance-cop30`).
+
+### 1.18.12
+
+Pedido, com referência visual: "vamos melhorar a página 404?? Use a
+imagem '/media/raposinhaRagdoll.jpg', coloque ela presa no canto
+inferior esquerdo. E CRAVE NA REF." — a referência mostrava a imagem
+no canto inferior DIREITO, não esquerdo; seguida a referência (a
+instrução explícita era "crave NA REF"), não o texto.
+
+- **`404.html` (arquivo novo) na raiz** — convenção padrão do
+  Cloudflare Pages: existindo, qualquer rota sem asset correspondente
+  passa a receber ele, com `404` de verdade, em vez do 404 genérico da
+  plataforma que o site usava até aqui. Confirmado via `wrangler pages
+  dev`: antes deste arquivo, uma rota inexistente caía no fallback de
+  SPA da plataforma (`index.html`, `200`); depois, `404 Not Found`
+  de verdade com este conteúdo. Efeito colateral bom: a verificação de
+  imagem em `functions/_middleware.js` (V1.18.8/9) fica mais correta
+  também — `.ok` sozinho já basta agora pra saber que um caminho não
+  existe; antes dependia só do `Content-Type` (`.ok` vinha sempre
+  `true` no fallback de SPA).
+- **`css/404.css` (arquivo novo)**: layout próprio, não entra em
+  `layout.css` (feed/blocos não fazem sentido numa página de erro) —
+  só `tokens.css`/`base.css` (mesmos que todo o site já carrega).
+  "404" grande (`clamp(64px, 12vw, 160px)`, mesma família tipográfica
+  de peso 900 dos títulos do site), texto, "voltar" (mesmo padrão de
+  sublinhado animado de `.diretor-voltar`/`.projeto-voltar`, reescrito
+  aqui). Sem hambúrguer, sem menu, sem painéis, sem efeito de cor —
+  página de fim de linha, deliberadamente enxuta.
+- **`media/raposinhaRagdoll.jpg` (arquivo já existia no repo, nunca
+  usado/commitado) presa no canto inferior direito**, `position:
+  fixed; right:-24px; bottom:-24px`, sangrando um pouco pra fora da
+  viewport — igual à referência, onde a foto aparece cortada nas
+  bordas, não inteira dentro do quadro. Fundo branco da própria foto
+  bate com o `--paper` do site, então não sobra moldura visível.
+  `clamp(280px, 36vw, 480px)` no desktop, menor no mobile
+  (`clamp(220px, 62vw, 360px)`, breakpoint de sempre, 820px).
+- **`.logo` mantido no topo esquerdo** mesmo não aparecendo na
+  referência — é o único elemento de chrome fixo presente em TODAS as
+  outras páginas do site sem exceção; removê-lo especificamente aqui
+  pareceria uma omissão, não uma escolha deliberada.
+- Verificado via Playwright: página confirmada sem erro de console,
+  sem overflow horizontal no mobile (390px); animação de hover do
+  "voltar" confirmada (sublinhado escondido por padrão, aparece no
+  hover — mesma direção/timing do padrão já usado no resto do site);
+  clique em "voltar" confirmado navegando pra home. Confirmado via
+  `wrangler pages dev` que uma rota de verdade inexistente devolve
+  status `404` com este conteúdo. Revisão visual por screenshot,
+  desktop e mobile, comparada com a referência enviada. Smoke test
+  local completo (site estático, sem a function) sem erro de console
+  ou de rede genuíno além do ruído de terceiro já catalogado (Vimeo,
+  em `global-renewable-alliance-cop30`).

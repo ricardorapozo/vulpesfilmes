@@ -1,0 +1,79 @@
+/* V1.18.12: página 404 dedicada — antes disso não existia, Cloudflare
+   Pages servia o 404 genérico da plataforma pra qualquer link quebrado.
+   Layout próprio, não reaproveita `css/layout.css` (feed/blocos não
+   fazem sentido aqui) — só `tokens.css` (cor/tipografia/`--gutter`) e
+   `base.css` (reset, `.logo`, fonte) entram, pelos mesmos motivos de
+   sempre. Referência visual do pedido: "404" grande no canto superior
+   esquerdo, texto e "voltar" logo abaixo, a raposinha de crochê
+   (`media/raposinhaRagdoll.jpg`) presa no canto inferior direito,
+   sangrando um pouco pra fora da tela — sem hambúrguer, sem menu, sem
+   efeito de cor: página de fim de linha, não mais um lugar do site
+   pra navegar a partir dela além do "voltar". */
+
+body.pagina-404 {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.erro-404 {
+  padding: calc(var(--logo-clearance) + 40px) var(--gutter) var(--gutter);
+  max-width: 46ch;
+}
+
+.erro-404 h1 {
+  font-variation-settings: 'wdth' 200, 'wght' 900;
+  font-size: clamp(64px, 12vw, 160px);
+  line-height: .9;
+  letter-spacing: -.01em;
+  margin-bottom: .15em;
+}
+
+.erro-404 p {
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.5;
+  margin-bottom: 28px;
+}
+
+/* Mesmo padrão de "voltar" usado no resto do site (sublinhado animado
+   — ver `.diretor-voltar a`/`.projeto-voltar` em `css/layout.css`),
+   reescrito aqui em vez de importar `layout.css` só por essa regra. */
+.erro-404__voltar {
+  position: relative;
+  display: inline-block;
+  font-variation-settings: 'wdth' 175, 'wght' 700;
+  font-size: clamp(16px, 1.4vw, 19px);
+}
+
+.erro-404__voltar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -.06em;
+  height: 3px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--t-text) var(--ease-out);
+}
+
+.erro-404__voltar:hover::after,
+.erro-404__voltar:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.erro-404__raposa {
+  position: fixed;
+  right: -24px;
+  bottom: -24px;
+  width: clamp(280px, 36vw, 480px);
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 820px) {
+  .erro-404 { max-width: none; }
+  .erro-404 h1 { font-size: clamp(56px, 20vw, 96px); }
+  .erro-404__raposa { width: clamp(220px, 62vw, 360px); }
+}
