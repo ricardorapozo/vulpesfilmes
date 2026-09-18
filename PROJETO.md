@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.14.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.15.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1963,6 +1963,12 @@ valor atual: `width: clamp(700px, 90vw, 1200px)` no desktop,
 nunca do resultado do multiplicador anterior. `<img>` é
 deliberadamente o ÚLTIMO elemento do `<body>` (depois de `.logo` e
 `main.erro-404`) — pedido explícito de posição na hierarquia do DOM.
+Ordem de PINTURA é outra coisa (V1.18.15): a foto fica ATRÁS do
+texto — `main.erro-404` tem `position: relative; z-index: 1`, então o
+"404"/parágrafo/"voltar" pintam por cima da imagem quando ela alcança
+o bloco de texto (viewports estreitos), sem mudar a ordem do DOM.
+**Fonte do parágrafo: Inter, não Advent Pro (V1.18.15)** — mesma sans
+de `.bio` (peso 300); o "404" (h1) e o "voltar" continuam Advent Pro.
 
 ---
 
@@ -5202,3 +5208,28 @@ deixe apenas 2.5x maior."
   desktop e mobile. Smoke test local completo (site estático, sem a
   function) sem erro de console ou de rede genuíno além do ruído de
   terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.15
+
+Pedido: "A imagem da raposinha deve ficar atrás do texto '404'. 'Essa
+página não existe ou tá ficando pronta a qualquer momento!' NÃO DEVE
+USAR A FONTE ADVENT PRO."
+
+- **Foto atrás do texto**: a `<img>` é `position: fixed` e o último
+  elemento do DOM (pedido da V1.18.14), então pintava POR CIMA do
+  texto (fluxo normal, sem `position`) sempre que crescia o bastante
+  pra alcançá-lo — a 837px de largura ela cobria o "404". `main.erro-
+  404` ganhou `position: relative; z-index: 1`: o texto sobe acima da
+  imagem sem mexer na ordem do DOM.
+- **Parágrafo em Inter (peso 300, como `.bio`)**, com
+  `font-variation-settings: normal` — o `body` herda `'wght' 400`, que
+  num variable font sobrescreve `font-weight`. O explícito `font-
+  family: 'Advent Pro'` do `body.pagina-404` (V1.18.13, pedido "fonte
+  sem serifa") fica: o "404" e o "voltar" continuam Advent Pro; só o
+  parágrafo troca.
+- Verificado via Playwright a 837×640: `elementFromPoint` no meio do
+  h1 devolve o próprio `H1` (não a imagem) mesmo com as caixas
+  sobrepostas; fonte computada do parágrafo `Inter, sans-serif`/`300`;
+  `Advent Pro` e `Inter` ambas carregadas (`document.fonts`); `<img>`
+  segue sendo `body.lastElementChild`; sem erro de console; sem
+  overflow no mobile (390px).

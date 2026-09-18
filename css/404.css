@@ -25,6 +25,16 @@ body.pagina-404 {
 .erro-404 {
   padding: calc(var(--logo-clearance) + 40px) var(--gutter) var(--gutter);
   max-width: 46ch;
+  /* V1.18.15: "a imagem da raposinha deve ficar atrás do texto" — a
+     `<img>` é `position: fixed` e o ÚLTIMO elemento do DOM, então por
+     padrão pintava POR CIMA do texto (que fica no fluxo normal, sem
+     `position`) sempre que a foto crescia o bastante pra alcançar o
+     bloco de texto (viewports mais estreitos — a 837px, por exemplo,
+     ela cobria o "404"). `position: relative; z-index: 1` sobe o bloco
+     de texto acima da imagem sem mexer na ordem do DOM (que continua
+     com a `<img>` por último, pedido anterior). */
+  position: relative;
+  z-index: 1;
 }
 
 .erro-404 h1 {
@@ -36,6 +46,14 @@ body.pagina-404 {
 }
 
 .erro-404 p {
+  /* V1.18.15: "NÃO DEVE USAR A FONTE ADVENT PRO" — Inter, a outra sans
+     do site (a mesma de `.bio`, `css/base.css`), peso 300 como lá.
+     `font-variation-settings: normal` porque `body` (base.css) manda
+     `'wght' 400` herdado, que num variable font sobrescreve o
+     `font-weight`. */
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+  font-variation-settings: normal;
   font-size: clamp(15px, 1.4vw, 18px);
   line-height: 1.5;
   margin-bottom: 28px;
