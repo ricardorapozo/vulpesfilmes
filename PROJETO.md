@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.5.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.6.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -216,6 +216,73 @@ Reaproveita as MESMAS transições CSS que já animam a entrada/saída do efeito
 em qualquer painel (`body { transition: background-color var(--t-panel) }`,
 `.28s` no overlay de cor das mídias) — nenhuma CSS nova foi necessária, só o
 toggle da classe.
+
+### Terceira guarda: vídeo "de verdade" tocando (V1.18.6)
+
+Relato: "quando o vídeo dá play, seja no lightbox branco da página
+inicial, ou no autoplay da página PROJETO, quando se passa 30[s] entra
+o efeito de cor" — interrompia visualmente quem estava assistindo
+(`.projeto-video` recebe o overlay de cor + P&B igual qualquer outra
+mídia, ver "Efeito de cor nas mídias" acima; mesmo quando a mídia em
+si fica de fora, como os lightboxes, o `body` por trás ainda muda de
+cor). Terceira guarda em `ativar()`, mesmo princípio da guarda de
+painel: `if (painelAberto() || videoRealTocando()) return;`.
+
+**"Vídeo de verdade" é distinto do loop mudo do feed/carrossel, de
+propósito** — pedido explícito ao refinar o escopo: "precisamos que os
+vídeos do loop continuem tocando, eles não podem interromper a entrada
+do efeito de cor." Os loops (`.media video`/`.slide video`, sempre
+`muted loop`, tocando sozinhos em segundo plano o tempo todo na home)
+ficam de fora da detecção — se contassem, o efeito quase nunca
+ligaria na home, já que sempre tem algum tocando. "De verdade" cobre
+só os três lugares onde o site toca vídeo pro usuário assistir de
+propósito, com som:
+
+- `.projeto-video` — autoplay da página do projeto.
+- `.photo-modal__video` — primeiro slide do lightbox de fotos (V1.17).
+- `.video-modal__frame` — modal aberto ao clicar na mídia ambiente do
+  feed/carrossel.
+
+`js/video-real.js` (script novo) detecta o estado de cada um — três
+formas de player, três jeitos de saber se está tocando:
+
+- **`<video>` local**: eventos nativos `play`/`pause`/`ended`.
+- **iframe do YouTube**: `enablejsapi=1` (já ligado em todo embed
+  desde a V1.17, ver `js/helpers.js`) + `postMessage({event:
+  'listening'})` assim que o iframe carrega — a partir daí o YouTube
+  avisa sozinho (`infoDelivery`, `info.playerState === 1` é "tocando")
+  toda vez que o estado muda.
+- **iframe do Vimeo**: `postMessage({method:'addEventListener',
+  value:'play'})` (e `'pause'`/`'ended'`) assim que o iframe carrega —
+  o player do Vimeo passa a mandar `{event:'play'}`/`{event:'pause'}`
+  sozinho a partir daí.
+
+Um `MutationObserver` por container (não listener fixo): os três têm o
+conteúdo trocado via `innerHTML` em momentos diferentes
+(`.photo-modal__video` a cada troca de slide; `.video-modal__frame` a
+cada abertura; `.projeto-video` uma vez só, mas ainda não existe
+quando o script roda — reconecta assim que aparece dentro de
+`#conteudo-projeto`) — reconecta o listener certo toda vez que o
+conteúdo muda, em vez de espalhar essa lógica pelos três arquivos que
+criam esse conteúdo (`js/projeto.js`, `js/photo-modal.js`, `js/video-
+modal.js` — nenhum dos três foi alterado). Expõe
+`window.VulpesVideoReal.tocando()` (`OR` entre os três containers) e
+dispara `video-real:mudou` toda vez que esse `OR` muda de valor.
+
+`js/idle-color.js` reage a `video-real:mudou` chamando `reiniciar()` —
+o mesmo tratamento que um `mousemove` já dava: se o efeito estava
+ativo, desliga na hora; a contagem de 30s recomeça do zero tanto ao
+COMEÇAR quanto ao PARAR de tocar (parar de assistir não é "estar
+parado" ainda, precisa de 30s de verdade depois disso também).
+
+Verificado via Playwright, com `page.clock` (fast-forward): vídeo
+tocando (forçado via comando `playVideo` por `postMessage`, já que
+autoplay com som é bloqueado pela política do navegador em contexto
+automatizado sem gesto do usuário) + 31s parado mantém
+`is-overlay-open` falso nos três containers; pausar o vídeo + 31s
+frescos ativa o efeito normalmente. Loop do feed confirmado tocando
+(`video.paused === false`) sem segurar o efeito — `is-overlay-open`
+liga normalmente na home mesmo com o loop rodando.
 
 ### Rodapé (V1.17.3, invertido na V1.17.5)
 
@@ -2077,6 +2144,10 @@ Abaixo dele:
 │   │                       (não carregado em projeto.html desde V1.11)
 │   ├── footer-menu.js    itens do menu no rodapé: Projetos volta ao
 │   │                       topo, Diretores expande o submenu (V1.18)
+│   ├── video-real.js     detecta vídeo "de verdade" tocando —
+│   │                       projeto/lightbox/modal, não o loop mudo
+│   │                       do feed (V1.18.6, carregado ANTES de
+│   │                       idle-color.js, que consome esse estado)
 │   ├── idle-color.js     efeito de cor após 30s parado (V1.8)
 │   ├── video-modal.js    modal de vídeo (YouTube/Vimeo/mp4)
 │   ├── photo-modal.js    lightbox de fotos da galeria
@@ -4698,3 +4769,55 @@ V1.18.5 (próximo disponível) pra não colidir.
 - Verificado via Playwright: favicon confirmado servindo `200`; smoke
   test completo sem erro de console ou de rede genuíno além do ruído
   de terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.6
+
+Relato: "quando o vídeo dá play, seja no lightbox branco da página
+inicial, ou no autoplay da página PROJETO, quando se passa 30[s] entra
+o efeito de cor. É possível desabilitar o efeito quando um vídeo
+estiver em play?" — seguido de um refinamento de escopo antes de
+implementar: "mas precisamos que os vídeos do loop continuem tocando,
+eles não podem interromper a entrada do efeito de cor."
+
+- **`js/video-real.js` (arquivo novo)** detecta vídeo "de verdade"
+  tocando — `.projeto-video` (autoplay da página de projeto),
+  `.photo-modal__video` (slide de vídeo do lightbox, V1.17) e
+  `.video-modal__frame` (modal da mídia ambiente) — e SÓ esses três;
+  deliberadamente não cobre `.media video`/`.slide video` (o loop mudo
+  do feed/carrossel), que continua tocando livre sem segurar o efeito.
+  Três formas de detectar, uma por tipo de player: `<video>` local via
+  eventos `play`/`pause`/`ended`; iframe do YouTube via `postMessage`
+  (`enablejsapi=1`, já ligado desde a V1.17) escutando `infoDelivery`/
+  `playerState`; iframe do Vimeo via `postMessage` (`addEventListener`
+  de `play`/`pause`/`ended`). Um `MutationObserver` por container
+  reconecta o listener certo toda vez que o conteúdo troca (slide
+  muda, modal reabre) — sem tocar em `js/projeto.js`, `js/photo-
+  modal.js` ou `js/video-modal.js`, os três arquivos que criam esse
+  conteúdo.
+- **`js/idle-color.js` ganha uma terceira guarda** — além de "nenhum
+  painel aberto", agora também "nenhum vídeo de verdade tocando"
+  (`window.VulpesVideoReal.tocando()`). Reage ao evento `video-real:
+  mudou` (disparado por `video-real.js`) chamando o mesmo `reiniciar()`
+  que um `mousemove` já disparava — desliga o efeito na hora se
+  estava ativo, e recomeça a contagem de 30s do zero tanto ao começar
+  quanto ao parar de tocar.
+- Verificado via Playwright, com `page.clock`: vídeo tocando (forçado
+  via `postMessage({event:'command', func:'playVideo'})`, já que
+  autoplay com som é bloqueado pela política do navegador sem gesto
+  do usuário em contexto automatizado) + 31s parado mantém `is-
+  overlay-open` falso — testado em `.projeto-video` e `.video-modal__
+  frame` com `playerState` chegando a `1` de verdade; pausar o vídeo +
+  31s frescos ativa o efeito normalmente. `.photo-modal__video`
+  verificado pelo mesmo código/mecanismo (handshake YouTube confirmado
+  conectando corretamente, `id` ecoado de volta) — o `playerState`
+  não chegou a `1` nesse container específico no navegador headless
+  (a política de autoplay do Chromium bloqueia mais agressivamente um
+  iframe sem `autoplay=1` na URL, como é o caso desse slide — "ele
+  pode voltar parado", V1.17), então esse caminho específico foi
+  confirmado por teste isolado do `<video>` local (evento sintético
+  `play`/`pause`) em vez de um vídeo do YouTube de verdade tocando.
+  Loop do feed confirmado tocando (`video.paused === false`, vídeo
+  real carregado e rodando) sem segurar o efeito — `is-overlay-open`
+  liga normalmente na home 31s depois, como sempre. Smoke test
+  completo sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
