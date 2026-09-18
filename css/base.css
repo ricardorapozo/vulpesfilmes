@@ -107,7 +107,18 @@ html.is-overlay-open body {
   background-blend-mode: overlay;
 }
 
-html.is-overlay-open { overflow: hidden; }
+/* V1.18.7: "quando o efeito de cor entra, ele elimina a barra de
+   rolagem... quando sai, a barra volta e causa um 'pulo' na tela" —
+   `is-overlay-open` é a MESMA classe que `js/idle-color.js` liga
+   sozinho, sem painel nenhum aberto, só pelo efeito ambiente de cor
+   (seção 2 do PROJETO.md) — travar o scroll fazia sentido pro painel
+   de verdade (menu/quem-somos/contato cobrindo a tela, evita rolar o
+   fundo por baixo), nunca fez sentido pro efeito de cor sozinho, que
+   não cobre nem esconde nada. `:has(.panel.is-open)` (mesma técnica
+   já usada em `.panel--menu:has(...)` mais abaixo neste arquivo)
+   escopa o travamento só pro caso real, sem precisar de uma classe
+   nova nem mexer em `js/panel.js`/`js/idle-color.js`. */
+html.is-overlay-open:has(.panel.is-open) { overflow: hidden; }
 
 a { color: inherit; text-decoration: none; }
 

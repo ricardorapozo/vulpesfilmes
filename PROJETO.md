@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.6.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.7.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1380,8 +1380,10 @@ mais.
 
 - **Sem rolagem**: `html.is-projeto-sem-galeria, html.is-projeto-sem-
   galeria body { height:100%; overflow:hidden }` — mesmo princípio de
-  `html.is-overlay-open { overflow:hidden }` (seção 2), travando a
-  PÁGINA; quem se adapta é o vídeo, não o contrário.
+  `html.is-overlay-open:has(.panel.is-open) { overflow:hidden }`
+  (seção 2, escopado desde a V1.18.7 — antes travava incondicional,
+  ver changelog), travando a PÁGINA; quem se adapta é o vídeo, não o
+  contrário.
 - **Vídeo enche o espaço disponível DENTRO da margem (V1.14 — era
   full-bleed até então).** `.projeto-corpo` vira `height:100vh;
   display:flex; flex-direction:column`; `#conteudo-projeto` (== `.feed`,
@@ -4821,3 +4823,40 @@ eles não podem interromper a entrada do efeito de cor."
   liga normalmente na home 31s depois, como sempre. Smoke test
   completo sem erro de console ou de rede genuíno além do ruído de
   terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.7
+
+Pedido: "quando o efeito de cor entra, ele elimina a barra de rolagem.
+Quando o efeito sai a barra de rolagem volta e causa um 'pulo' na
+tela. Você tem como corrigir isso?"
+
+- **Causa raiz: `html.is-overlay-open { overflow: hidden; }` travava a
+  rolagem incondicionalmente, toda vez que a classe ligava** — e
+  `is-overlay-open` é a MESMA classe que `js/idle-color.js` liga
+  sozinho, sem painel nenhum aberto, só pelo efeito ambiente de cor
+  (30s parado, ver seção 2). Travar a rolagem fazia sentido pro painel
+  de verdade (menu/quem-somos/contato cobrindo a tela — evita rolar o
+  fundo por baixo dele); nunca fez sentido pro efeito de cor sozinho,
+  que não cobre nem esconde nada, só tinge. Remover/reaparecer a barra
+  de rolagem empurra o conteúdo (a área útil da viewport muda de
+  largura), daí o "pulo" — a cada vez que o efeito ligava e desligava,
+  não só quando um painel de verdade abria/fechava.
+- **Fix, uma linha de CSS**: `html.is-overlay-open:has(.panel.is-open)
+  { overflow: hidden; }` — escopa o travamento só pro caso em que
+  existe mesmo um painel aberto por baixo da classe compartilhada.
+  `:has()` já era usado noutro lugar deste arquivo
+  (`.panel--menu:has(.menu-toggle[aria-expanded='true'])`), então não
+  é técnica nova pro projeto. Nenhuma mudança em `js/panel.js` nem
+  `js/idle-color.js` — os dois continuam ligando a mesma classe do
+  jeito que sempre ligaram, só o CSS que reage a ela ficou mais
+  específico.
+- Verificado via Playwright: `overflow` computado da `<html>`
+  confirmado `visible` durante o efeito de cor sozinho (`is-overlay-
+  open` true, nenhum `.panel.is-open`), depois de 31s parado via
+  `page.clock`; confirmado `hidden` com o painel de menu de verdade
+  aberto; confirmado `hidden` também com o painel "quem somos" aberto
+  (dois níveis de painel — menu, depois quem-somos — mesma classe
+  `.panel.is-open` nos dois); confirmado `visible` de novo depois de
+  fechar. Smoke test completo sem erro de console ou de rede genuíno
+  além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).
