@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.15.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.16.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1938,13 +1938,18 @@ não a única.
 **Layout próprio (`css/404.css`), não reaproveita `css/layout.css`**
 — feed/blocos de projeto não fazem sentido numa página de erro. Só
 `tokens.css` (cor/tipografia/`--gutter`) e `base.css` (reset, `.logo`,
-fonte) entram — os mesmos dois arquivos que todo o resto do site já
-carrega, sem duplicar reset nem import de fonte. Página deliberadamente
-enxuta: sem hambúrguer, sem menu, sem painéis, sem efeito de cor —
-fim de linha, o único jeito de sair dela é o "voltar" (mesmo padrão
-visual de sublinhado animado usado em `.diretor-voltar a`/`.projeto-
-voltar`, reescrito aqui pra não precisar importar `layout.css` só por
-essa regra). `.logo` (topo esquerdo, "vulpesfilmes") continua
+`.burger`, `.panel`, fonte) entram — os mesmos dois arquivos que todo
+o resto do site já carrega, sem duplicar reset nem import de fonte.
+Página enxuta: sem rodapé, sem feed. **Desde a V1.18.16 tem o
+hambúrguer** (antes era "fim de linha", só o "voltar" saía dela): mesmo
+`<button class="burger">` + `<nav id="menu">` + painéis "quem somos" e
+"contato" das outras páginas, com `js/hue.js` (sorteia `--hue`) e
+`js/panel.js` — sem `js/idle-color.js`, então NÃO há efeito de cor
+ocioso aqui, só o de painel aberto. `main.erro-404` tem `id="conteudo"`
+porque `panel.js` usa esse id pra deixá-lo `inert` atrás de um painel.
+O "voltar" (mesmo padrão visual de sublinhado animado usado em
+`.diretor-voltar a`/`.projeto-voltar`, reescrito aqui pra não precisar
+importar `layout.css` só por essa regra) continua. `.logo` (topo esquerdo, "vulpesfilmes") continua
 presente — não aparecia na referência visual do pedido, mas é o único
 elemento de chrome fixo em TODAS as outras páginas do site sem
 exceção; tirar dele especificamente pareceria uma omissão, não uma
@@ -1955,14 +1960,17 @@ que já bate com o `--paper` do site) fica `position: fixed`, presa no
 canto inferior direito, sangrando um pouco pra fora da viewport**
 (`right: -24px; bottom: -24px`) — mesmo efeito da referência, onde a
 imagem aparece cortada nas bordas direita e inferior, não contida
-inteira dentro do quadro. Tamanho ajustado duas vezes depois do
-primeiro patch — histórico completo na V1.18.13/V1.18.14 do changelog;
-valor atual: `width: clamp(700px, 90vw, 1200px)` no desktop,
-`clamp(550px, 155vw, 900px)` no mobile (breakpoint de sempre, 820px)
-— sempre um múltiplo da base original (`clamp(280px, 36vw, 480px)`),
-nunca do resultado do multiplicador anterior. `<img>` é
-deliberadamente o ÚLTIMO elemento do `<body>` (depois de `.logo` e
-`main.erro-404`) — pedido explícito de posição na hierarquia do DOM.
+inteira dentro do quadro. Tamanho
+foi 3x, depois 2.5x (V1.18.13/V1.18.14) e **voltou ao original na
+V1.18.16** ("retire o scale de 2.5x"): `width: clamp(280px, 36vw,
+480px)` no desktop, `clamp(220px, 62vw, 360px)` no mobile (breakpoint
+de sempre, 820px). `<img>` é deliberadamente o ÚLTIMO elemento do
+`<body>` (depois de `.logo`, burger, `main.erro-404`, menu, painéis e
+`panel.js`) — pedido explícito de posição na hierarquia do DOM.
+Com um painel aberto (`is-overlay-open`, fundo vira `--hue`), a
+raposinha ganha `filter: grayscale(1) contrast(1.3)` +
+`mix-blend-mode: multiply` — o fundo branco do JPEG some contra a cor
+(mesmo tratamento das mídias, sem `::after` porque `<img>` não tem).
 Ordem de PINTURA é outra coisa (V1.18.15): a foto fica ATRÁS do
 texto — `main.erro-404` tem `position: relative; z-index: 1`, então o
 "404"/parágrafo/"voltar" pintam por cima da imagem quando ela alcança
@@ -5233,3 +5241,41 @@ USAR A FONTE ADVENT PRO."
   `Advent Pro` e `Inter` ambas carregadas (`document.fonts`); `<img>`
   segue sendo `body.lastElementChild`; sem erro de console; sem
   overflow no mobile (390px).
+
+### 1.18.16
+
+Pedido: "1. retire o scale de 2.5x aplicado a imagem
+'/media/raposinhaRagdoll.jpg'. 2. Coloque o menu burguer na pagina
+404." (Screenshot anexo: `/projeto?slug=cbcc-2022` — slug inexistente
+— mostrando "Projeto não encontrado." e não a 404 nova; ver abaixo.)
+
+- **Raposinha volta ao tamanho original**: `clamp(280px, 36vw, 480px)`
+  desktop / `clamp(220px, 62vw, 360px)` mobile (os valores da V1.18.12,
+  antes dos multiplicadores 3x e 2.5x). Continua `position: fixed`,
+  canto inferior direito, e último elemento do `<body>`.
+- **Menu hambúrguer na 404**: `404.html` ganhou `<button class="burger">`,
+  `<nav id="menu">`, painéis "quem somos"/"contato" (cópia do
+  `index.html`, sem `aria-current` em "Projetos" — nenhuma página do
+  menu é a atual), `js/hue.js` no `<head>` e `js/panel.js` antes da
+  `<img>` (que segue sendo o último elemento). `<main>` ganhou
+  `id="conteudo"`. Sem `js/idle-color.js`/`video-real.js`: nada de
+  vídeo aqui, e o efeito ocioso não faz sentido numa página de erro.
+- **Raposinha com painel aberto**: ao abrir o menu, o fundo vira
+  `--hue`, e o JPEG (fundo branco opaco) apareceria como um retângulo
+  claro. `html.is-overlay-open .erro-404__raposa { filter: grayscale(1)
+  contrast(1.3); mix-blend-mode: multiply }` resolve — o branco vira a
+  cor de fundo, a raposa fica em tom de cinza como as mídias do resto
+  do site.
+- Verificado via Playwright (1440×800 e 390×780): burger presente,
+  menu abre/fecha (`aria-expanded`, `is-overlay-open` liga e desliga),
+  "quem somos" e "contato" abrem e fecham com Esc, raposa 480px no
+  desktop / 242px no mobile, `<img>` continua `body.lastElementChild`,
+  sem overflow horizontal, sem erro de console.
+- **Não tratado (fora do pedido)**: o screenshot mostra que um slug de
+  projeto inexistente (`projeto?slug=cbcc-2022`) NÃO cai na 404 —
+  `projeto.html` existe (200) e `js/projeto.js` escreve "Projeto não
+  encontrado." dentro dele. A 404 nova só cobre caminhos sem arquivo.
+- `media/raposinhaRagdoll.jpg` foi reexportado por você durante este
+  patch (641×428 → 1282×856, ~33KB → ~56KB, JPEG válido): mesma imagem
+  em 2x, então fica nítida em telas retina agora que ela voltou a ser
+  exibida pequena (480px de largura no máximo). Incluído no commit.

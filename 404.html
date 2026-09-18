@@ -9,16 +9,63 @@
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/404.css">
+<script src="js/hue.js"></script>
 </head>
 <body class="pagina-404">
 
 <a class="logo" href="./">vulpesfilmes</a>
 
-<main class="erro-404">
+<button class="burger" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu">
+  <span></span><span></span><span></span>
+</button>
+
+<main id="conteudo" class="erro-404">
   <h1>404</h1>
   <p>Essa página não existe ou tá ficando pronta a qualquer momento!</p>
   <a class="erro-404__voltar" href="./">voltar</a>
 </main>
+
+<nav id="menu" class="panel panel--menu" aria-label="Navegação principal" aria-hidden="true">
+  <ul>
+    <li><a href="./">Projetos</a></li>
+    <li>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="submenu-diretores">Diretores</button>
+      <button class="submenu-back" type="button">voltar</button>
+      <ul id="submenu-diretores" class="submenu" hidden>
+        <li><a href="ricardo-rapozo.html">Ricardo Rapozo</a></li>
+        <li><a href="daniela-luquini.html">Daniela Luquini</a></li>
+      </ul>
+    </li>
+    <li><a href="#quem-somos" data-abre="quem-somos">Quem somos</a></li>
+    <li><a href="#contato" data-abre="contato">Contato</a></li>
+  </ul>
+  <p class="social">
+    <a href="#">instagram</a>
+  </p>
+</nav>
+
+<section id="quem-somos" class="panel panel--about" aria-label="Quem somos" role="dialog" aria-modal="true" aria-hidden="true">
+  <button type="button" class="close close--x" data-fecha aria-label="Fechar">&times;</button>
+  <div class="about-content">
+    <div class="prose">
+      <p>A Vulpes é um pequeno bureau de soluções audiovisuais. Um lugar para pensar, criar e dar forma a ideias.</p>
+      <p>Trabalhamos onde estratégia encontra imagem: na direção, no roteiro, na edição, no motion e na pós-produção. Entramos no projeto conforme o que ele pede, juntando olhar criativo, repertório e precisão técnica para transformar uma boa ideia em algo que realmente mereça ser visto.</p>
+    </div>
+    <a class="about-content__logo-link" href="./" aria-label="Voltar para o portfólio">
+      <img class="about-content__logo" src="media/vulpesFilmes-LOGO-HORIZONTAL.png" alt="vulpesfilmes" width="1791" height="772">
+    </a>
+  </div>
+</section>
+
+<section id="contato" class="panel panel--contact" aria-label="Contato" role="dialog" aria-modal="true" aria-hidden="true">
+  <button type="button" class="close" data-fecha>fechar</button>
+  <div class="contact-card">
+    <p class="contact-card__local">São Paulo/SP, Brasil</p>
+    <p class="contact-card__item"><a href="mailto:contato@vulpesfilmes.com">contato@vulpesfilmes.com</a></p>
+  </div>
+</section>
+
+<script src="js/panel.js"></script>
 
 <img class="erro-404__raposa" src="media/raposinhaRagdoll.jpg" alt="" aria-hidden="true">
 
