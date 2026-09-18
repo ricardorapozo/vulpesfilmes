@@ -14,6 +14,12 @@ body.pagina-404 {
   min-height: 100dvh;
   overflow-x: hidden;
   position: relative;
+  /* V1.18.13: explícito de propósito, mesmo `body` (base.css) já
+     cascateando 'Advent Pro', sans-serif pra cá — pedido explícito
+     ("use a fonte sem serifa pro texto") depois da referência com a
+     raposinha 3x maior; melhor garantir aqui do que confiar só na
+     herança pra essa página específica. */
+  font-family: 'Advent Pro', sans-serif;
 }
 
 .erro-404 {
@@ -62,11 +68,21 @@ body.pagina-404 {
   transform-origin: left;
 }
 
+/* V1.18.13: "aumente 3x a imagem" — clamp inteiro multiplicado por 3
+   (era `clamp(280px, 36vw, 480px)`), mesma âncora (`position: fixed`,
+   canto inferior direito, sangrando pra fora). `position: fixed` não
+   participa do fluxo do documento — por maior que fique, não cria
+   scroll horizontal na página (`overflow-x: hidden` em `body.pagina-
+   404` continua sendo só precaução, não a defesa principal aqui).
+
+   V1.18.14: "deixe apenas 2.5x maior" — multiplicador ajustado de 3x
+   pra 2.5x, sobre a MESMA base original (`clamp(280px, 36vw, 480px)`),
+   não sobre o 3x da V1.18.13 (2.5 × 280/36/480, não 2.5 × 840/108/1440). */
 .erro-404__raposa {
   position: fixed;
   right: -24px;
   bottom: -24px;
-  width: clamp(280px, 36vw, 480px);
+  width: clamp(700px, 90vw, 1200px);
   height: auto;
   pointer-events: none;
   user-select: none;
@@ -75,5 +91,5 @@ body.pagina-404 {
 @media (max-width: 820px) {
   .erro-404 { max-width: none; }
   .erro-404 h1 { font-size: clamp(56px, 20vw, 96px); }
-  .erro-404__raposa { width: clamp(220px, 62vw, 360px); }
+  .erro-404__raposa { width: clamp(550px, 155vw, 900px); }
 }

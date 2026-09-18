@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.12.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.14.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -1955,10 +1955,14 @@ que já bate com o `--paper` do site) fica `position: fixed`, presa no
 canto inferior direito, sangrando um pouco pra fora da viewport**
 (`right: -24px; bottom: -24px`) — mesmo efeito da referência, onde a
 imagem aparece cortada nas bordas direita e inferior, não contida
-inteira dentro do quadro. `width: clamp(280px, 36vw, 480px)` no
-desktop, menor no mobile (`clamp(220px, 62vw, 360px)`, breakpoint de
-sempre, 820px) — a foto é pequena (640×427), não escala além do
-razoável pra não borrar.
+inteira dentro do quadro. Tamanho ajustado duas vezes depois do
+primeiro patch — histórico completo na V1.18.13/V1.18.14 do changelog;
+valor atual: `width: clamp(700px, 90vw, 1200px)` no desktop,
+`clamp(550px, 155vw, 900px)` no mobile (breakpoint de sempre, 820px)
+— sempre um múltiplo da base original (`clamp(280px, 36vw, 480px)`),
+nunca do resultado do multiplicador anterior. `<img>` é
+deliberadamente o ÚLTIMO elemento do `<body>` (depois de `.logo` e
+`main.erro-404`) — pedido explícito de posição na hierarquia do DOM.
 
 ---
 
@@ -5145,3 +5149,56 @@ instrução explícita era "crave NA REF"), não o texto.
   local completo (site estático, sem a function) sem erro de console
   ou de rede genuíno além do ruído de terceiro já catalogado (Vimeo,
   em `global-renewable-alliance-cop30`).
+
+### 1.18.13
+
+Pedido, com nova referência visual: "Aumente 3x a imagem da raposinha.
+Use a fonte sem serifa para o texto. CRAVE NA REF."
+
+- **`.erro-404__raposa` 3x maior**: `clamp(280px, 36vw, 480px)` →
+  `clamp(840px, 108vw, 1440px)` no desktop; equivalente no mobile.
+  Mesma âncora (`position: fixed`, canto inferior direito).
+- **`font-family: 'Advent Pro', sans-serif` explícito em `body.pagina-
+  404`** — já vinha herdado de `body` (`base.css`), mas declarado aqui
+  também pra garantir, já que o pedido especificou a fonte por nome
+  ("sem serifa").
+- **Achado no meio do caminho, não corrigido nesta versão: `media/
+  raposinhaRagdoll.jpg` virou um arquivo do Photoshop (PSB) salvo com
+  extensão `.jpg`, não um JPEG de verdade** — `naturalWidth`/
+  `naturalHeight` do `<img>` vinham `0` no navegador, a imagem ficava
+  invisível (sem ícone de imagem quebrada, porque o `alt=""` é vazio).
+  Conferido que o PRÓPRIO commit da V1.18.12 (`46128c0`, já publicado)
+  já tinha capturado esse arquivo corrompido — o site em produção
+  ficou com a raposinha invisível na 404 entre a V1.18.12 e a correção
+  na V1.18.14. Causa provável: o mesmo tipo de interferência externa
+  no arquivo já visto antes nesta conversa (iCloud Drive sincronizando
+  o diretório do projeto) — o arquivo bom que foi conferido antes do
+  commit da V1.18.12 não era o mesmo que acabou indo pro commit.
+  Reportado ao usuário; corrigido por ele mesmo (reexportação),
+  consertado no código na V1.18.14.
+
+### 1.18.14
+
+Pedido, depois de o usuário corrigir o JPEG: "Coloque o elemento
+'/media/raposinhaRagdoll.jpg' como o último elemento da hierarquia e
+deixe apenas 2.5x maior."
+
+- **`media/raposinhaRagdoll.jpg` confirmado JPEG válido** (641×428,
+  ~33KB) — `naturalWidth`/`naturalHeight` do `<img>` confirmados não
+  mais `0`.
+- **`<img class="erro-404__raposa">` já era o último elemento do
+  `<body>`** (depois de `.logo` e `main.erro-404`) desde a V1.18.12 —
+  nenhuma mudança de posição no DOM precisou ser feita, só confirmada.
+- **Tamanho ajustado de 3x (V1.18.13) pra 2.5x** — `clamp(840px, 108vw,
+  1440px)` → `clamp(700px, 90vw, 1200px)` no desktop (e o equivalente
+  no mobile), sobre a MESMA base original (`clamp(280px, 36vw,
+  480px)`), não em cima do resultado do 3x — 2.5 × base, não 2.5 × 3x.
+- Verificado via Playwright: `naturalWidth: 641`/`naturalHeight: 428`
+  confirmados (imagem carregando de verdade); `<img>` confirmado como
+  `document.body.lastElementChild`; sem erro de console; sem overflow
+  horizontal no mobile (390px). Confirmado via `wrangler pages dev`
+  que a imagem responde `200`/`image/jpeg` e que a rota 404 continua
+  servindo `404.html` normalmente. Revisão visual por screenshot,
+  desktop e mobile. Smoke test local completo (site estático, sem a
+  function) sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo, em `global-renewable-alliance-cop30`).
