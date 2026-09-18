@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.8.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.10.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2330,9 +2330,26 @@ precisar de build nem mudar a arquitetura do site em si. Ver
 changelog da V1.18.8 pro mecanismo completo — resumo: reescreve
 `og:title`/`og:description`/`og:image`/`og:url`/`<title>` de
 `/projeto?slug=X` com dados reais de `projetos.json` antes da resposta
-sair do servidor, com fallback pro preview genérico quando o projeto
-não tem poster (ou o campo aponta pra um arquivo que ainda não
-existe).
+sair do servidor.
+
+**Imagem do card, em cascata (V1.18.9, depois de ver um card de
+verdade no WhatsApp):** poster do projeto → primeira foto da galeria
+→ `previewVulpes.jpg`, cada etapa só entra se a anterior falhar (campo
+vazio no JSON, ou aponta pra um arquivo que não existe — conferido de
+verdade com um fetch, `Content-Type` começando com `image/`, não só
+`.ok`). `dancebook-brasil` (sem poster, com galeria) é o único
+projeto hoje que passa pela segunda etapa — os outros sem poster
+válido (`gree-smartwind-brasil`, `minidoc-cop30-embrapa`,
+`global-renewable-alliance-cop30`) também não têm galeria, caem direto
+no `previewVulpes.jpg`.
+
+**Descrição do card, igual em TODOS os projetos (V1.18.9, texto
+trocado na V1.18.10)**: `"Vulpes — do pensamento à imagem."`, fixa —
+não é mais `midia[0].alt` de cada projeto. Pedido explícito depois de
+ver o `alt` de "Gree Smartwind Brasil" (texto de acessibilidade, sem
+tom de marca) indo pro card sem ajuste nenhum: "precisamos de algo
+padrão...
+para todos os cards."
 
 ---
 
@@ -4940,3 +4957,52 @@ que oferece Pages Functions — código na borda, sem precisar de build.
   servidor de desenvolvimento local — `python3 -m http.server` — não
   reproduz) — a verificação real acontece só depois do push, olhando
   o card de verdade num compartilhamento.
+
+### 1.18.9
+
+Pedido, depois de ver o card real de "Smartwind para Gree" (sem
+poster) num compartilhamento de WhatsApp: "Esse projeto não tem poster
+então ele colocou o preview. Ok. Quando não tiver um poster definido,
+usemos a primeira foto da galeria, se não houver, usamos o
+previewVulpes. Já o texto, precisamos de algo padrão, escreva 'Vulpes
+- estratégia, direção e pós-produção.' para todos os cards."
+
+- **Imagem do card em cascata**: poster → primeira foto da galeria
+  (`p.galeria[0].src`) → `previewVulpes.jpg`. A verificação "a imagem
+  existe de verdade" (`.ok` + `Content-Type` começando com `image/`,
+  ver V1.18.8) virou uma função (`imagemDeVerdade()`), chamada uma vez
+  pro poster e, só se falhar, de novo pra galeria — evita repetir a
+  mesma lógica duas vezes. Variável renomeada de `posterUrl` pra
+  `imagemUrl` (pode vir de qualquer uma das duas fontes agora, o card
+  não distingue).
+- **Descrição fixa em todos os projetos**: `"Vulpes - estratégia,
+  direção e pós-produção."`, não mais `midia[0].alt` de cada um — o
+  `alt` é texto de acessibilidade (frase descritiva da cena pra quem
+  usa leitor de tela), nunca foi escrito pensando em tom de marca pra
+  card de compartilhamento; inconsistente de projeto pra projeto
+  ("Gree Smartwind Brasil" foi o exemplo que motivou o pedido).
+- Verificado com `wrangler pages dev` local, os 7 projetos: `cbcc-
+  2026`/`dossie-anonimo`/`historias-do-brasil-redes` (poster válido)
+  confirmados usando o poster, não a galeria; `dancebook-brasil` (sem
+  poster, COM galeria válida) confirmado usando `galeria[0].src`, com
+  `og:image:width`/`og:image:height` removidos igual ao caso de
+  poster; `gree-smartwind-brasil`/`minidoc-cop30-embrapa`/`global-
+  renewable-alliance-cop30` (sem poster válido E sem galeria, ou
+  galeria vazia) confirmados caindo em `previewVulpes.jpg` com as
+  dimensões `1200`/`630` mantidas. Descrição padrão confirmada nos 7.
+  Smoke test local completo (site estático, sem a function) sem erro
+  de console ou de rede genuíno além do ruído de terceiro já
+  catalogado (Vimeo, em `global-renewable-alliance-cop30`).
+
+### 1.18.10
+
+Pedido: "Vamos mudar o texto da descrição padrão para 'Vulpes — do
+pensamento à imagem.'"
+
+- `functions/_middleware.js`: `descricao` trocada de `"Vulpes -
+  estratégia, direção e pós-produção."` (V1.18.9) pra `"Vulpes — do
+  pensamento à imagem."` — mesmo mecanismo, só o texto (agora com
+  travessão, não hífen). Continua igual em `meta description`/
+  `og:description`/`twitter:description`, nos 7 projetos.
+- Verificado com `wrangler pages dev` local: as três tags confirmadas
+  com o texto novo em `cbcc-2026`.

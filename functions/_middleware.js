@@ -50,7 +50,15 @@ export async function onRequest(context) {
 
   var nome = projeto.titulo.replace(/\n/g, ' ');
   var tituloCompleto = nome + ' — vulpesfilmes';
-  var descricao = (projeto.midia && projeto.midia[0] && projeto.midia[0].alt) || null;
+  /* V1.18.9: descrição padrão pra TODOS os projetos, não mais
+     `midia[0].alt` — pedido explícito depois de ver um card de
+     verdade no WhatsApp ("precisamos de algo padrão... para todos os
+     cards"). O `alt` de cada projeto é escrito pra acessibilidade
+     (frase descritiva da cena), não pro tom de marca que um card de
+     compartilhamento pede — inconsistente de projeto pra projeto.
+     Texto trocado na V1.18.10 (era "Vulpes - estratégia, direção e
+     pós-produção."). */
+  var descricao = 'Vulpes — do pensamento à imagem.';
 
   /* Poster por projeto (V1.14+, ver Pendências no PROJETO.md): alguns
      projetos ainda não têm arquivo de poster, só o campo vazio no
@@ -62,20 +70,33 @@ export async function onRequest(context) {
      `wrangler pages dev`) responde um arquivo QUE NÃO EXISTE com
      `200` + o fallback de SPA (`index.html`), não um `404` de
      verdade — só o `Content-Type` denuncia (`text/html` em vez de
-     `image/*`) que aquilo não é a imagem pedida. */
-  var posterUrl = null;
-  var posterCaminho = projeto.midia && projeto.midia[0] && projeto.midia[0].poster;
-  if (posterCaminho) {
+     `image/*`) que aquilo não é a imagem pedida.
+
+     V1.18.9: quando o poster falha, tenta a PRIMEIRA foto da galeria
+     antes de desistir pro `previewVulpes.jpg` — pedido explícito
+     depois do card de "Gree Smartwind Brasil" (sem poster) sair com o
+     preview genérico: "quando não tiver um poster definido, usemos a
+     primeira foto da galeria." Mesma verificação de Content-Type nos
+     dois, função só extraída pra não repetir a lógica duas vezes. */
+  async function imagemDeVerdade(caminho) {
+    if (!caminho) return null;
     try {
-      var posterRes = await env.ASSETS.fetch(new URL('/' + posterCaminho, url));
-      var tipo = posterRes.headers.get('content-type') || '';
-      if (posterRes.ok && tipo.indexOf('image/') === 0) {
-        posterUrl = new URL('/' + posterCaminho, url).toString();
+      var res = await env.ASSETS.fetch(new URL('/' + caminho, url));
+      var tipo = res.headers.get('content-type') || '';
+      if (res.ok && tipo.indexOf('image/') === 0) {
+        return new URL('/' + caminho, url).toString();
       }
     } catch (erro) {
-      posterUrl = null;
+      /* segue pro próximo fallback */
     }
+    return null;
   }
+
+  var posterCaminho = projeto.midia && projeto.midia[0] && projeto.midia[0].poster;
+  var galeriaCaminho = projeto.galeria && projeto.galeria[0] && projeto.galeria[0].src;
+  /* Nome genérico (não `posterUrl`) de propósito — pode vir do poster
+     OU da primeira foto da galeria, o card não distingue os dois. */
+  var imagemUrl = (await imagemDeVerdade(posterCaminho)) || (await imagemDeVerdade(galeriaCaminho));
 
   class ReescreverMeta {
     element(el) {
@@ -83,15 +104,16 @@ export async function onRequest(context) {
       if (chave === 'og:title' || chave === 'twitter:title') {
         el.setAttribute('content', tituloCompleto);
       } else if (chave === 'description' || chave === 'og:description' || chave === 'twitter:description') {
-        if (descricao) el.setAttribute('content', descricao);
+        el.setAttribute('content', descricao);
       } else if (chave === 'og:url') {
         el.setAttribute('content', url.toString());
       } else if (chave === 'og:image' || chave === 'twitter:image') {
-        if (posterUrl) el.setAttribute('content', posterUrl);
-      } else if (posterUrl && (chave === 'og:image:width' || chave === 'og:image:height')) {
+        if (imagemUrl) el.setAttribute('content', imagemUrl);
+      } else if (imagemUrl && (chave === 'og:image:width' || chave === 'og:image:height')) {
         /* Dimensão do preview genérico (1200×630) não vale pro poster
-           real — cada um tem sua própria proporção. Remove em vez de
-           mentir um valor errado; crawler mede a imagem sozinho. */
+           nem pra foto de galeria — cada imagem tem sua própria
+           proporção. Remove em vez de mentir um valor errado; crawler
+           mede a imagem sozinho. */
         el.remove();
       }
     }
