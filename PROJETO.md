@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.17.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.18.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2418,6 +2418,14 @@ já mostra o domínio (`vulpesfilmes.com`) numa linha própria, então
 repetir a marca no título virava redundância visível (pedido depois
 de ver um card de verdade: "por que sobra aquele 'vulpesfilmes' no
 final do título?").
+
+**Página inicial (V1.18.18): `<title>` `"Projetos - Vulpes Filmes"`,
+`og:title`/`twitter:title` `"Vulpes Filmes"`** — com espaço e
+maiúsculas, diferente do "vulpesfilmes" em minúsculas usado nas
+demais páginas e no `og:site_name`. Mesma lógica da divergência acima:
+a aba diz onde a pessoa está (Projetos) e de que site é; o card de
+compartilhamento só traz o nome da marca. As outras páginas mantêm
+`"<título> — vulpesfilmes"` no `<title>`.
 
 **Imagem do card, em cascata (V1.18.9, depois de ver um card de
 verdade no WhatsApp):** poster do projeto → primeira foto da galeria
@@ -5302,3 +5310,19 @@ perguntado qual tamanho queria, "Tamanho natural do JPEG (1282px)".
   (= `naturalWidth`); 837px → 753px (90vw); 390px → 390px; sem overflow
   horizontal em nenhum; `<img>` continua `body.lastElementChild`; texto
   ("404", parágrafo, "voltar") segue por cima da imagem (V1.18.15).
+
+### 1.18.18
+
+Pedido: "o nome da aba da página inicial deve ser 'Projetos - Vulpes
+Filmes'. O OG Title deve ser 'Vulpes Filmes'."
+
+- `index.html`: `<title>vulpesfilmes</title>` → `<title>Projetos - Vulpes
+  Filmes</title>`; `og:title` `"vulpesfilmes"` → `"Vulpes Filmes"`.
+- **`twitter:title` também mudou para `"Vulpes Filmes"`** (não foi pedido
+  explicitamente): sempre andou junto com `og:title` no site inteiro
+  (V1.18.11 os trata como um par), e deixá-lo em "vulpesfilmes"
+  faria o card do X/Twitter divergir do de WhatsApp/Facebook.
+- Só a página inicial: as outras páginas seguem com `<title>` `"<título>
+  — vulpesfilmes"` e `og:title` próprios; `og:site_name` continua
+  `"vulpesfilmes"`. Nenhum JS reescreve o `<title>` da home
+  (`document.title` só existe em `js/projeto.js`).
