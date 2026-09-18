@@ -49,6 +49,13 @@ export async function onRequest(context) {
   if (!projeto) return response;
 
   var nome = projeto.titulo.replace(/\n/g, ' ');
+  /* `tituloCompleto` (com "— vulpesfilmes") só pro <title> da aba —
+     lá faz sentido, não tem mais nada na tela dizendo de qual site é.
+     `og:title`/`twitter:title` usam só `nome` (V1.18.11): o card já
+     mostra o domínio (`vulpesfilmes.com`) numa linha própria, embaixo
+     — repetir a marca no título virava redundância visível no card
+     (pedido depois de ver um card de verdade: "por que sobra aquele
+     'vulpesfilmes' no final do título?"). */
   var tituloCompleto = nome + ' — vulpesfilmes';
   /* V1.18.9: descrição padrão pra TODOS os projetos, não mais
      `midia[0].alt` — pedido explícito depois de ver um card de
@@ -102,7 +109,7 @@ export async function onRequest(context) {
     element(el) {
       var chave = el.getAttribute('property') || el.getAttribute('name');
       if (chave === 'og:title' || chave === 'twitter:title') {
-        el.setAttribute('content', tituloCompleto);
+        el.setAttribute('content', nome);
       } else if (chave === 'description' || chave === 'og:description' || chave === 'twitter:description') {
         el.setAttribute('content', descricao);
       } else if (chave === 'og:url') {

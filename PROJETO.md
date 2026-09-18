@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.10.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.11.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2331,6 +2331,15 @@ changelog da V1.18.8 pro mecanismo completo — resumo: reescreve
 `og:title`/`og:description`/`og:image`/`og:url`/`<title>` de
 `/projeto?slug=X` com dados reais de `projetos.json` antes da resposta
 sair do servidor.
+
+**`<title>` e `og:title`/`twitter:title` divergem de propósito desde a
+V1.18.11**: o `<title>` da aba continua `"<título> — vulpesfilmes"`
+(nada mais na tela diz de qual site é); `og:title`/`twitter:title`
+usam só o título do projeto, sem o sufixo — o card de compartilhamento
+já mostra o domínio (`vulpesfilmes.com`) numa linha própria, então
+repetir a marca no título virava redundância visível (pedido depois
+de ver um card de verdade: "por que sobra aquele 'vulpesfilmes' no
+final do título?").
 
 **Imagem do card, em cascata (V1.18.9, depois de ver um card de
 verdade no WhatsApp):** poster do projeto → primeira foto da galeria
@@ -5006,3 +5015,23 @@ pensamento à imagem.'"
   `og:description`/`twitter:description`, nos 7 projetos.
 - Verificado com `wrangler pages dev` local: as três tags confirmadas
   com o texto novo em `cbcc-2026`.
+
+### 1.18.11
+
+Pedido, olhando pra um card de verdade no WhatsApp: "por que sobra
+aquele 'vulpesfilmes' no final do título do card?"
+
+- **`og:title`/`twitter:title` perdem o sufixo `" — vulpesfilmes"`
+  — o `<title>` da aba mantém.** Os dois vinham da mesma variável,
+  `tituloCompleto`; o card do WhatsApp já mostra `vulpesfilmes.com`
+  numa linha própria (visível no screenshot que motivou o pedido),
+  então repetir a marca no título ficava redundante — algo que não
+  acontece na aba do navegador, onde não sobra nenhum outro indício
+  de qual site é. `og:title`/`twitter:title` passam a usar `nome`
+  (só o título do projeto) em vez de `tituloCompleto`.
+- Verificado com `wrangler pages dev` local: `<title>` confirmado
+  mantendo `" — vulpesfilmes"`; `og:title`/`twitter:title`
+  confirmados SEM o sufixo, no mesmo projeto. Smoke test local
+  completo (site estático, sem a function) sem erro de console ou de
+  rede genuíno além do ruído de terceiro já catalogado (Vimeo, em
+  `global-renewable-alliance-cop30`).
