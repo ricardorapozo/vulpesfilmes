@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.7.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.8.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2129,6 +2129,12 @@ Abaixo dele:
 ├── projeto.html                template único de projeto (?slug=)
 ├── ricardo-rapozo.html, daniela-luquini.html   páginas de diretor
 ├── time.html                   quadro executivo (sem galeria)
+├── functions/
+│   └── _middleware.js   Cloudflare Pages Function (V1.18.8) — reescreve
+│                          og:*/twitter:*/<title> de /projeto?slug=X na
+│                          borda, com dados reais de projetos.json; não
+│                          roda em build nem no navegador, só no deploy
+│                          (testável local via `wrangler pages dev`)
 ├── css/
 │   ├── tokens.css      cores, tipografia, espaçamento
 │   ├── base.css        reset, fonte, painéis, modais, rodapé
@@ -2304,17 +2310,29 @@ crawlers de preview (WhatsApp, Twitter/X, Facebook, Slack) buscam a
 imagem direto do servidor deles, sem contexto de página — uma URL
 relativa não resolveria pra nada.
 
-**Limite conhecido: `projeto.html` é um template único (seção 6) — o
-card de um link `projeto.html?slug=X` específico não reflete aquele
-projeto.** `og:title`/`og:description`/`og:url` de `projeto.html` são
-genéricos ("Projeto — vulpesfilmes"), porque essas tags são estáticas
-no HTML e os crawlers de preview não executam o JavaScript que troca
-`document.title`/monta a página a partir de `projetos.json` (mesma
-limitação que já existia pro `<title>` da aba do navegador antes desse
-JS rodar — não é uma limitação nova introduzida aqui, só mais visível
-agora que existe card pra reparar nisso). Resolver de verdade pediria
-gerar HTML por projeto em build ou renderizar no servidor — fora do
-escopo de um site 100% estático sem build.
+**Limite original (resolvido na V1.18.8): `projeto.html` é um template
+único (seção 6) — o card de um link `projeto.html?slug=X` específico
+não refletia aquele projeto.** `og:title`/`og:description`/`og:url`
+de `projeto.html` eram genéricos ("Projeto — vulpesfilmes"), porque
+essas tags são estáticas no HTML e os crawlers de preview não
+executam o JavaScript que troca `document.title`/monta a página a
+partir de `projetos.json` (mesma limitação que já existia pro
+`<title>` da aba do navegador antes desse JS rodar). Resolver de
+verdade parecia pedir gerar HTML por projeto em build ou renderizar
+no servidor — fora do escopo de um site 100% estático sem build,
+CONFORME escrito aqui até a V1.18.7.
+
+**V1.18.8 achou o meio-termo**: o deploy já é Cloudflare Pages (seção
+12, changelog do primeiro deploy), que oferece Pages Functions —
+código que roda NA BORDA, antes de servir os arquivos estáticos, sem
+precisar de build nem mudar a arquitetura do site em si. Ver
+`functions/_middleware.js` (documentado inline) e a entrada de
+changelog da V1.18.8 pro mecanismo completo — resumo: reescreve
+`og:title`/`og:description`/`og:image`/`og:url`/`<title>` de
+`/projeto?slug=X` com dados reais de `projetos.json` antes da resposta
+sair do servidor, com fallback pro preview genérico quando o projeto
+não tem poster (ou o campo aponta pra um arquivo que ainda não
+existe).
 
 ---
 
@@ -2369,10 +2387,12 @@ Em aberto, não bloqueiam:
 
 - [x] Texto real de "Quem somos" — **Resolvido em V11** (era lorem ipsum)
 - [ ] Confirmar a paleta de 6 cores (as do documento são propostas)
-- [ ] Card de compartilhamento de `projeto.html?slug=X` mostra sempre o
-  mesmo título/imagem genéricos do template, não o projeto específico
-  (ver seção 10, "Compartilhamento") — só resolveria com build por
-  página ou render no servidor; fora do escopo atual (site estático)
+- [x] Card de compartilhamento de `projeto.html?slug=X` mostrava sempre
+  o mesmo título/imagem genéricos do template — **Resolvido em
+  V1.18.8**, sem build nem servidor próprio: uma Cloudflare Pages
+  Function (`functions/_middleware.js`) reescreve as tags na borda,
+  usando o deploy que o site já tinha (ver seção 10,
+  "Compartilhamento").
 - [x] Comportamento da galeria e página de projeto individual — **Resolvido
   em V7**, refinado em V9 (título de volta ao topo, sticky como na home) e
   V10 (Vimeo além de YouTube/mp4): `projeto.html?slug=<slug>` (template
@@ -4860,3 +4880,63 @@ tela. Você tem como corrigir isso?"
   fechar. Smoke test completo sem erro de console ou de rede genuíno
   além do ruído de terceiro já catalogado (Vimeo, em
   `global-renewable-alliance-cop30`).
+
+### 1.18.8
+
+Pedido: "quando eu compartilho um PROJETO... o card de preview que
+aparece é o previewVulpes.jpg. É possível utilizar o poster de cada
+PROJETO?" — limite catalogado desde a V1.8.4 (seção 10,
+"Compartilhamento") como "fora do escopo de um site 100% estático sem
+build". A circunstância mudou: o deploy já é Cloudflare Pages (V1.0),
+que oferece Pages Functions — código na borda, sem precisar de build.
+
+- **`functions/_middleware.js` (arquivo novo)**: intercepta só
+  requisições pra `/projeto` (o `.html` nunca chega até a function —
+  o próprio Cloudflare Pages redireciona `/projeto.html?slug=X` pra
+  `/projeto?slug=X` antes, 308 "clean URLs", confirmado via `wrangler
+  pages dev`), lê o `slug` da query string, busca o projeto em
+  `projetos.json` (via `env.ASSETS.fetch`, binding automático do
+  Pages Functions pros arquivos estáticos do próprio deploy), e
+  reescreve com `HTMLRewriter` (API nativa do runtime de Workers):
+  `<title>`, `og:title`/`twitter:title` (`"<título> — vulpesfilmes"`,
+  mesmo formato que `js/projeto.js` já usa pro `document.title`),
+  `og:description`/`twitter:description`/`meta description`
+  (`midia[0].alt` do projeto), `og:url` (a URL de verdade da
+  requisição, com slug e tudo) e `og:image`/`twitter:image` (poster
+  do projeto). Passa direto (`next()`, sem reescrever nada) pra
+  qualquer outra rota — home, diretores, `time.html`, mídia, CSS/JS.
+- **Fallback pro preview genérico quando o projeto não tem poster
+  válido** — vários projetos têm o campo `midia[0].poster` vazio, ou
+  apontando pra um arquivo que ainda não existe no repo (ver seção 11,
+  Pendências: `gree-smartwind-brasil`, `global-renewable-alliance-
+  cop30`). `.ok` sozinho não detecta isso: o Cloudflare Pages responde
+  um arquivo inexistente com `200` + o fallback de SPA (`index.html`),
+  não um `404` de verdade — só o `Content-Type` da resposta denuncia
+  (`text/html` em vez de `image/*`) que aquilo não é a imagem pedida.
+  Confere os dois (`.ok` E `Content-Type` começando com `image/`)
+  antes de trocar a tag; se falhar, mantém `previewVulpes.jpg` (o
+  comportamento de sempre) em vez de servir um card quebrado.
+- **`og:image:width`/`og:image:height` (1200×630, dimensão do preview
+  genérico) removidos quando troca pro poster real** — cada poster
+  tem sua própria proporção (conferido: de 1111×626 a 1920×1080, bem
+  longe de 1200×630) — remover em vez de mentir uma dimensão errada;
+  o crawler mede a imagem sozinho quando os hints não estão presentes.
+- Verificado com `wrangler pages dev` local (emula o runtime de
+  Workers/Pages Functions de verdade, incluindo `HTMLRewriter` e o
+  binding `ASSETS` — não dá pra testar isso com um servidor HTTP
+  simples): os 3 projetos com poster de verdade (`cbcc-2026`,
+  `dossie-anonimo`, `historias-do-brasil-redes`) confirmados com
+  `og:image`/`twitter:image` apontando pro poster real e `og:image:
+  width/height` removidos; os 4 sem poster válido (`dancebook-brasil`,
+  `gree-smartwind-brasil`, `minidoc-cop30-embrapa`, `global-renewable-
+  alliance-cop30`) confirmados mantendo `previewVulpes.jpg` e as
+  dimensões `1200`/`630`. `<title>`/`og:title`/`og:description`/
+  `og:url` confirmados corretos pro projeto certo. Sem `slug` na URL e
+  com `slug` inexistente, ambos confirmados devolvendo a página
+  genérica intocada. Confirmado que o resto do site (home, diretores,
+  CSS, JS, `projetos.json`) passa pela function sem nenhuma mudança de
+  status ou `Content-Type`. Não coberto por `js/smoke.js`/Playwright
+  (o efeito só existe no runtime de deploy do Cloudflare, que o
+  servidor de desenvolvimento local — `python3 -m http.server` — não
+  reproduz) — a verificação real acontece só depois do push, olhando
+  o card de verdade num compartilhamento.
