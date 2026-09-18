@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.19.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.18.20.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2431,7 +2431,12 @@ compartilhamento só traz o nome da marca. As outras páginas mantêm
 `"Vulpes Filmes"`**, igual à home — o card de compartilhamento de
 `ricardo-rapozo.html`/`daniela-luquini.html` mostra a marca, não o nome
 da pessoa. O `<title>` da aba continua `"<Nome> — vulpesfilmes"`.
-`time.html` ainda usa `"Nosso time — vulpesfilmes"` nos dois.
+**`time.html` e o `projeto.html` estático também (V1.18.20)** — agora
+TODA página fixa tem `og:title`/`twitter:title` `"Vulpes Filmes"`.
+No `projeto.html` isso é só o fallback (`/projeto` sem `slug`, ou com
+slug inexistente): `functions/_middleware.js` continua trocando por
+`nome` do projeto quando o slug existe (V1.18.11). `<title>` da aba de
+cada página fica como estava.
 
 **Imagem do card, em cascata (V1.18.9, depois de ver um card de
 verdade no WhatsApp):** poster do projeto → primeira foto da galeria
@@ -5348,3 +5353,17 @@ Filmes'."
   não a citou; segue com `"Nosso time — vulpesfilmes"` em `og:title`/
   `twitter:title`. Se a intenção era padronizar todas as páginas fixas,
   é uma linha por página.
+
+### 1.18.20
+
+Pedido: "Padronize." (depois da V1.18.19, que deixou `time.html` de fora.)
+
+- `time.html`: `og:title`/`twitter:title` `"Nosso time — vulpesfilmes"`
+  → `"Vulpes Filmes"`.
+- **`projeto.html` também** (não citado, mas é a última página fixa com o
+  padrão antigo, `"Projeto — vulpesfilmes"`): o valor estático só vale
+  quando o `/projeto` não tem slug válido — com slug existente o
+  middleware o sobrescreve com o nome do projeto, então os cards de
+  projetos reais não mudam.
+- `<title>` (aba) de todas as páginas inalterado. `404.html` não tem
+  `og:*`, então não entra.
