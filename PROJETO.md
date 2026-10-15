@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.18.20.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.19.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -2381,6 +2381,17 @@ description>` que cada página já tinha — nenhum texto novo inventado.
 `ricardo-rapozo.html`/`daniela-luquini.html` usam `og:type="profile"`
 (páginas de pessoa); as outras três, `"website"`.
 
+**`og:image`/`twitter:image` dos diretores (V1.19) usam a foto da bio,
+não `previewVulpes.jpg`** — `media/time/ricardo-rapozo.jpg` (960×1280)
+e `media/time/daniela-luquini.jpg` (516×700), a mesma foto de
+`.diretor-bio__foto` em cada página. `og:image:width`/`og:image:height`
+seguem as dimensões reais do arquivo (não o 1200×630 recomendado —
+retrato, não paisagem; nenhuma plataforma testada recusou por causa
+disso). Estático, direto no `<head>` de cada página — sem passar pelo
+`functions/_middleware.js`, que só reescreve `/projeto`. As outras três
+páginas (`index.html`, `time.html`, `projeto.html` sem slug válido)
+continuam em `previewVulpes.jpg`.
+
 **`og:image`/`og:url` em URL absoluta (`https://vulpesfilmes.com/...`),
 não relativa** — ao contrário de link/script/img normais do site
 (sempre relativos, pra funcionar em qualquer domínio/porta local), os
@@ -2524,18 +2535,6 @@ Em aberto, não bloqueiam:
   "Página de projeto e modal de vídeo".
 - [ ] Fotos de `media/galeria/cbcc-2026/` estão pesadas (8-9MB cada, direto
   da câmera) — valeria comprimir/redimensionar antes de publicar
-- [ ] **Religar "Spaten Fight Night" em `projetos.json` depois do
-  lançamento oficial da campanha (sexta-feira).** Removido de propósito
-  na V1.8.3 — "o lançamento dessa campanha é na sexta-feira. Vamos
-  esperar o lançamento oficial" — não é um bug nem mídia faltando, é
-  retenção editorial deliberada. O objeto completo (slug
-  `spaten-fight-night`, 3 loops + 5 fotos de galeria + vídeo do
-  YouTube) está preservado no histórico do git (commit anterior a esta
-  versão) — basta recuperar o bloco de lá e reinserir no array na
-  posição de sempre (era o mais recente, `data: "2026-09-08"`, topo do
-  feed); os arquivos de mídia (`media/loops/260907-SPATEN-CUT-0{1,2,3}
-  .mp4`, `media/galeria/spaten-fight-night/`) não foram apagados,
-  continuam no repo esperando a data certa.
 
 ---
 
@@ -5367,3 +5366,52 @@ Pedido: "Padronize." (depois da V1.18.19, que deixou `time.html` de fora.)
   projetos reais não mudam.
 - `<title>` (aba) de todas as páginas inalterado. `404.html` não tem
   `og:*`, então não entra.
+
+### 1.19
+
+Pedido: "1. Suba a página 'spaten - gut'. 2. adicione Daniela como
+codiretora oo job 'CBCC'. 3. o card de compartilhamentos dos diretores
+deve usar a foto da bio. Corrija isso." — seguido, no meio do patch,
+de "Coloque a daniela também como codiretora do job 'COP 30'."
+
+- **`spaten-fight-night` de volta em `projetos.json`** — religado
+  depois de ficar retido desde a V1.8.3 (ver pendência removida da
+  seção 11). O objeto não sobreviveu no histórico do git (o range
+  v0.17→v1.8.3 virou um commit só, já sem o Spaten), então foi
+  reconstruído a partir do que o changelog documentava (V1.3, V1.6.6) e
+  dos arquivos de mídia que continuavam no repo: slug
+  `spaten-fight-night`, "Spaten Fight Night, case pitch para Gut São
+  Paulo", cliente "Gut São Paulo", `registro: "publicitario"`,
+  `data: "2026-09-08"` (o mais recente de todos, confirmado no topo do
+  feed), vídeo `https://youtu.be/_E8HEDlR8UA`, loop ambiente
+  `media/loops/260907-SPATEN-CUT-01.mp4` e as 5 fotos de
+  `media/galeria/spaten-fight-night/`. `placeholder` (`#342f31`) é a
+  cor média de uma das fotos, nunca especificada antes.
+- **`media/loops/260907-SPATEN-CUT-02.mp4` e `-03.mp4` continuam sem
+  uso** — a arquitetura de hoje (V11) só lê `midia[0].loop` como
+  primeiro slide do carrossel do feed; os outros dois cortes eram
+  usados quando a própria página do projeto virava carrossel de vídeo
+  (V1.3-V1.5), comportamento removido na reformulação da V1.6. Não é
+  regressão deste patch — já estavam órfãos desde então.
+- **Daniela Luquini como codiretora de `cbcc-2026`** ("CBCC") **e de
+  `global-renewable-alliance-cop30`** ("COP 30", pedido no meio do
+  patch) — `diretor` de cada um virou `["ricardo-rapozo",
+  "daniela-luquini"]`. Os dois projetos passam a aparecer na galeria
+  "trabalhos" da página dela, junto do `minidoc-cop30-embrapa` que já
+  estava lá.
+- **Card de compartilhamento dos diretores usa a foto da bio** — ver
+  nota nova na seção 6/"Compartilhamento" sobre `og:image`/
+  `twitter:image` dos dois.
+- Verificado via Playwright: feed da home confirmado com "Spaten Fight
+  Night..." como primeiro título (mais recente); página do projeto
+  (`projeto.html?slug=spaten-fight-night`) com vídeo real do YouTube
+  (confirmado pelo título do embed, "SPATEN CASE PITCH - GUT SÃO
+  PAULO") e 5 fotos de galeria; galeria de Daniela Luquini confirmada
+  com os 3 títulos (CBCC, EMBRAPA, COP30/UN Conference); `og:image`/
+  `og:image:width`/`og:image:height`/`twitter:image` de
+  `ricardo-rapozo.html`/`daniela-luquini.html` confirmados apontando
+  pras fotos de bio com as dimensões reais. Smoke test completo (todas
+  as páginas + todos os 8 `projeto.html?slug=...`, incluindo o Spaten
+  de volta) sem erro de console ou de rede genuíno além do ruído de
+  terceiro já catalogado (Vimeo/Cloudflare em
+  `global-renewable-alliance-cop30`).

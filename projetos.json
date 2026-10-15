@@ -1,5 +1,31 @@
 [
   {
+    "slug": "spaten-fight-night",
+    "titulo": "Spaten Fight Night, case pitch para Gut São Paulo",
+    "cliente": "Gut São Paulo",
+    "ano": 2026,
+    "data": "2026-09-08",
+    "registro": "publicitario",
+    "tipo": "carousel",
+    "diretor": ["ricardo-rapozo"],
+    "video": "https://youtu.be/_E8HEDlR8UA",
+    "placeholder": "#342f31",
+    "midia": [
+      {
+        "loop": "media/loops/260907-SPATEN-CUT-01.mp4",
+        "poster": "",
+        "alt": "Spaten Fight Night, vídeo em loop"
+      }
+    ],
+    "galeria": [
+      { "src": "media/galeria/spaten-fight-night/SPATEN-fightNight-01.jpg", "alt": "Spaten Fight Night, foto 1" },
+      { "src": "media/galeria/spaten-fight-night/SPATEN-fightNight-02.jpg", "alt": "Spaten Fight Night, foto 2" },
+      { "src": "media/galeria/spaten-fight-night/SPATEN-fightNight-03.jpg", "alt": "Spaten Fight Night, foto 3" },
+      { "src": "media/galeria/spaten-fight-night/SPATEN-fightNight-04.jpg", "alt": "Spaten Fight Night, foto 4" },
+      { "src": "media/galeria/spaten-fight-night/SPATEN-fightNight-05.jpg", "alt": "Spaten Fight Night, foto 5" }
+    ]
+  },
+  {
     "slug": "cbcc-2026",
     "titulo": "Conferência Brasileira de Carbono 2026 para Aliança Brasil NBS",
     "cliente": "",
@@ -7,7 +33,7 @@
     "data": "2026-09-01",
     "registro": "documental",
     "tipo": "carousel",
-    "diretor": ["ricardo-rapozo"],
+    "diretor": ["ricardo-rapozo", "daniela-luquini"],
     "video": "https://youtu.be/vB-p7HZ4F18",
     "placeholder": "#b9ad9a",
     "midia": [
@@ -96,7 +122,7 @@
     "data": "2026-08-11",
     "registro": "documental",
     "tipo": "single",
-    "diretor": ["ricardo-rapozo"],
+    "diretor": ["ricardo-rapozo", "daniela-luquini"],
     "video": "https://vimeo.com/1166997708?fl=tl&fe=ec",
     "placeholder": "#4f6b52",
     "midia": [
