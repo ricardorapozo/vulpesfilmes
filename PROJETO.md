@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.19.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.20.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -5415,3 +5415,33 @@ de "Coloque a daniela também como codiretora do job 'COP 30'."
   de volta) sem erro de console ou de rede genuíno além do ruído de
   terceiro já catalogado (Vimeo/Cloudflare em
   `global-renewable-alliance-cop30`).
+
+### 1.20
+
+Pedido: "adicionar o meu último job. Sial 2026. Título 'O Brasil Inteiro
+em Paris para Apex Brasil - Sial 2026'", com link do YouTube, pasta de
+fotos selecionadas e, em seguida, o loop (`loopSIal2026.mp4`). Direção
+de Ricardo e Daniela, registro documental (confirmados pelo usuário).
+No meio do patch, o título mudou: "vamos mudar o título para ApexBrasil
+- SIal 2026" — gravado como "ApexBrasil - Sial 2026" ("Sial" com a
+grafia do pedido original; "SIal" lido como erro de digitação).
+
+- **`sial-2026` adicionado a `projetos.json`** no topo do array:
+  título "ApexBrasil - Sial 2026", cliente "ApexBrasil", `ano: 2026`, `data: "2026-10-29"` (o mais
+  recente, abre o feed), `registro: "documental"`, `diretor:
+  ["ricardo-rapozo", "daniela-luquini"]`, vídeo
+  `https://youtu.be/fGO_D_Dd9EM`. `placeholder` (`#93744f`) é a cor
+  média da primeira foto.
+- **Loop `media/loops/loopSIAL2026.mp4`**: o original vinha em 4K com
+  áudio (~122MB, 10s); reencodado em 1080p H.264, sem áudio (o loop do
+  feed é mudo), `crf 23`, `+faststart` — ~9,5MB.
+- **8 fotos em `media/galeria/sial-2026/`** (`sial-2026-01.jpg` a
+  `-08.jpg`, na ordem dos arquivos originais `SIAL26_HERO_*`): frames
+  4K reduzidos pra 1920×1080, 125-250KB cada — mesmo padrão das
+  galerias de CBCC e Spaten.
+- Rodapé (`.rodape-versao`) de `index.html`, `time.html` e das duas
+  páginas de diretor: `v1.19` → `v1.20`.
+- Verificado no navegador local: `sial-2026` abre o feed da home
+  (carrossel loop + 8 fotos); `projeto.html?slug=sial-2026` com título
+  "ApexBrasil - Sial 2026", embed do YouTube `fGO_D_Dd9EM` e as 8 fotos
+  na galeria; aparece nas páginas de Ricardo e de Daniela.

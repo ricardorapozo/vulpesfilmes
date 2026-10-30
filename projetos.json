@@ -1,5 +1,34 @@
 [
   {
+    "slug": "sial-2026",
+    "titulo": "ApexBrasil - Sial 2026",
+    "cliente": "ApexBrasil",
+    "ano": 2026,
+    "data": "2026-10-29",
+    "registro": "documental",
+    "tipo": "carousel",
+    "diretor": ["ricardo-rapozo", "daniela-luquini"],
+    "video": "https://youtu.be/fGO_D_Dd9EM",
+    "placeholder": "#93744f",
+    "midia": [
+      {
+        "loop": "media/loops/loopSIAL2026.mp4",
+        "poster": "",
+        "alt": "ApexBrasil - Sial 2026, vídeo em loop"
+      }
+    ],
+    "galeria": [
+      { "src": "media/galeria/sial-2026/sial-2026-01.jpg", "alt": "ApexBrasil - Sial 2026, foto 1" },
+      { "src": "media/galeria/sial-2026/sial-2026-02.jpg", "alt": "ApexBrasil - Sial 2026, foto 2" },
+      { "src": "media/galeria/sial-2026/sial-2026-03.jpg", "alt": "ApexBrasil - Sial 2026, foto 3" },
+      { "src": "media/galeria/sial-2026/sial-2026-04.jpg", "alt": "ApexBrasil - Sial 2026, foto 4" },
+      { "src": "media/galeria/sial-2026/sial-2026-05.jpg", "alt": "ApexBrasil - Sial 2026, foto 5" },
+      { "src": "media/galeria/sial-2026/sial-2026-06.jpg", "alt": "ApexBrasil - Sial 2026, foto 6" },
+      { "src": "media/galeria/sial-2026/sial-2026-07.jpg", "alt": "ApexBrasil - Sial 2026, foto 7" },
+      { "src": "media/galeria/sial-2026/sial-2026-08.jpg", "alt": "ApexBrasil - Sial 2026, foto 8" }
+    ]
+  },
+  {
     "slug": "spaten-fight-night",
     "titulo": "Spaten Fight Night, case pitch para Gut São Paulo",
     "cliente": "Gut São Paulo",
