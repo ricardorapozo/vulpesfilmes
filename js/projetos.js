@@ -19,7 +19,19 @@
     .then(function (projetos) {
       projetos.sort(function (a, b) { return (b.data || '').localeCompare(a.data || ''); });
       window.PROJETOS = projetos;
-      document.dispatchEvent(new CustomEvent('projetos:pronto'));
+      /* V1.21: só avisa depois que todos os <script> da página rodaram.
+         O fetch começa aqui, antes de feed.js/projeto.js (que ouvem
+         `projetos:pronto`) e de media.js/carousel-infinite.js
+         (que ouvem o `feed:pronto` disparado em
+         seguida). Com rede lenta, ou um desses arquivos demorando a
+         baixar, o JSON chegava primeiro, o aviso saía sem ninguém
+         ouvindo e a página ficava vazia (galeria de diretor, página de
+         projeto) até recarregar. DOMContentLoaded só dispara depois do
+         último <script> síncrono do body, então todo mundo já está
+         ouvindo. */
+      function avisar() { document.dispatchEvent(new CustomEvent('projetos:pronto')); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avisar);
+      else avisar();
     })
     .catch(function (erro) {
       console.error(erro);

@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.20.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.21.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -5445,3 +5445,34 @@ grafia do pedido original; "SIal" lido como erro de digitação).
   (carrossel loop + 8 fotos); `projeto.html?slug=sial-2026` com título
   "ApexBrasil - Sial 2026", embed do YouTube `fGO_D_Dd9EM` e as 8 fotos
   na galeria; aparece nas páginas de Ricardo e de Daniela.
+
+### 1.21
+
+Pedido: "você percebeu que existe esse 'bug de carregamento'? é possível
+consertar isso?" — a galeria de Daniela Luquini apareceu vazia na
+verificação da V1.20 e só montou depois de recarregar.
+
+- **Causa: corrida entre `projetos.js` e quem ouve `projetos:pronto`.**
+  `projetos.js` dispara o `fetch('projetos.json')` assim que roda, mas
+  `feed.js`/`projeto.js` (que registram o listener) vêm depois na
+  ordem dos `<script>` — nas páginas de diretor, seis scripts depois;
+  em `projeto.html`, três. Se o JSON chegasse antes de esses arquivos
+  baixarem (rede lenta, cache frio), o evento saía sem ninguém ouvindo
+  e a página ficava vazia até recarregar. Mesmo risco em cadeia pro
+  `feed:pronto` (`media.js`, `carousel-infinite.js` vêm depois de
+  `feed.js` em todas as páginas): o feed podia montar sem carrossel
+  infinito nem lazy-load dos loops.
+- **Correção em `js/projetos.js`**: o `projetos:pronto` só é disparado
+  depois de `DOMContentLoaded` (ou na hora, se o documento já passou
+  disso). `DOMContentLoaded` só sai depois do último `<script>` síncrono
+  do body, então todos os listeners — dos dois eventos — já existem.
+  Nenhum outro arquivo mudou.
+- Rodapé: `v1.20` → `v1.21`.
+- Verificado com um servidor local que atrasa `js/feed.js` e
+  `js/projeto.js` em 1s: antes da correção, `daniela-luquini.html`
+  ficava com 0 blocos e `projeto.html?slug=sial-2026` sem vídeo nem
+  galeria; depois, 4 blocos com carrossel (clones criados), 8 fotos +
+  embed do YouTube, e a home com os 9 projetos, sem erro de console.
+  Autoplay dos loops não pôde ser conferido: o painel do navegador de
+  teste estava oculto, e aí o `IntersectionObserver` nunca dispara (nem
+  numa observação isolada, fora do código do site).
