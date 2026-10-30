@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.21.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.22.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -5476,3 +5476,20 @@ verificação da V1.20 e só montou depois de recarregar.
   Autoplay dos loops não pôde ser conferido: o painel do navegador de
   teste estava oculto, e aí o `IntersectionObserver` nunca dispara (nem
   numa observação isolada, fora do código do site).
+
+### 1.22
+
+Pedido: "muda o título para 'Sial 2026 para ApexBrasil'" — chegou
+durante a conferência da V1.21 no ar, que achou um furo nela.
+
+- **`sial-2026`: título "ApexBrasil - Sial 2026" → "Sial 2026 para
+  ApexBrasil"** (e os `alt` do loop e das 8 fotos). Segue o padrão
+  "<job> para <cliente>" dos outros títulos.
+- **`js/projetos.js` agora é carregado como `js/projetos.js?v=2`** nas
+  5 páginas que o usam. Conferindo a V1.21 em produção, a galeria de
+  Daniela continuou vazia: o HTML novo (rodapé `v1.21`) veio da rede,
+  mas o navegador reaproveitou o `projetos.js` antigo do cache — sem a
+  correção. Mesmo truque já usado em `feed.js?v=5`: mudar a URL força
+  o download. **Regra daqui pra frente: toda mudança em
+  `js/projetos.js` sobe esse `?v=`.**
+- Rodapé: `v1.21` → `v1.22`.

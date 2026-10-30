@@ -1,7 +1,7 @@
 [
   {
     "slug": "sial-2026",
-    "titulo": "ApexBrasil - Sial 2026",
+    "titulo": "Sial 2026 para ApexBrasil",
     "cliente": "ApexBrasil",
     "ano": 2026,
     "data": "2026-10-29",
@@ -14,18 +14,18 @@
       {
         "loop": "media/loops/loopSIAL2026.mp4",
         "poster": "",
-        "alt": "ApexBrasil - Sial 2026, vídeo em loop"
+        "alt": "Sial 2026 para ApexBrasil, vídeo em loop"
       }
     ],
     "galeria": [
-      { "src": "media/galeria/sial-2026/sial-2026-01.jpg", "alt": "ApexBrasil - Sial 2026, foto 1" },
-      { "src": "media/galeria/sial-2026/sial-2026-02.jpg", "alt": "ApexBrasil - Sial 2026, foto 2" },
-      { "src": "media/galeria/sial-2026/sial-2026-03.jpg", "alt": "ApexBrasil - Sial 2026, foto 3" },
-      { "src": "media/galeria/sial-2026/sial-2026-04.jpg", "alt": "ApexBrasil - Sial 2026, foto 4" },
-      { "src": "media/galeria/sial-2026/sial-2026-05.jpg", "alt": "ApexBrasil - Sial 2026, foto 5" },
-      { "src": "media/galeria/sial-2026/sial-2026-06.jpg", "alt": "ApexBrasil - Sial 2026, foto 6" },
-      { "src": "media/galeria/sial-2026/sial-2026-07.jpg", "alt": "ApexBrasil - Sial 2026, foto 7" },
-      { "src": "media/galeria/sial-2026/sial-2026-08.jpg", "alt": "ApexBrasil - Sial 2026, foto 8" }
+      { "src": "media/galeria/sial-2026/sial-2026-01.jpg", "alt": "Sial 2026 para ApexBrasil, foto 1" },
+      { "src": "media/galeria/sial-2026/sial-2026-02.jpg", "alt": "Sial 2026 para ApexBrasil, foto 2" },
+      { "src": "media/galeria/sial-2026/sial-2026-03.jpg", "alt": "Sial 2026 para ApexBrasil, foto 3" },
+      { "src": "media/galeria/sial-2026/sial-2026-04.jpg", "alt": "Sial 2026 para ApexBrasil, foto 4" },
+      { "src": "media/galeria/sial-2026/sial-2026-05.jpg", "alt": "Sial 2026 para ApexBrasil, foto 5" },
+      { "src": "media/galeria/sial-2026/sial-2026-06.jpg", "alt": "Sial 2026 para ApexBrasil, foto 6" },
+      { "src": "media/galeria/sial-2026/sial-2026-07.jpg", "alt": "Sial 2026 para ApexBrasil, foto 7" },
+      { "src": "media/galeria/sial-2026/sial-2026-08.jpg", "alt": "Sial 2026 para ApexBrasil, foto 8" }
     ]
   },
   {
