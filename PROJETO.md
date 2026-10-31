@@ -1,6 +1,6 @@
 # vulpesfilmes — documento do projeto
 
-**Versão 1.22.** Site no ar em produção — `vulpesfilmes.com` é o domínio
+**Versão 1.22.1.** Site no ar em produção — `vulpesfilmes.com` é o domínio
 principal, `vulpesfilmes.com.br` redireciona pra ele. Saiu do beta:
 `0.01` até `0.17.1` foram o desenvolvimento antes do primeiro deploy;
 daqui pra frente, mudanças pedidas em uma mesma leva viram uma versão
@@ -5493,3 +5493,18 @@ durante a conferência da V1.21 no ar, que achou um furo nela.
   o download. **Regra daqui pra frente: toda mudança em
   `js/projetos.js` sobe esse `?v=`.**
 - Rodapé: `v1.21` → `v1.22`.
+
+### 1.22.1
+
+Pedido: "eu fiz uma alteração no loop [...] do último post do site
+Vulpes: SIAL 2026. Por favor, atualiza esse arquivo de loop, marca como
+patch."
+
+- **`media/loops/loopSIAL2026.mp4` trocado** pela nova versão
+  (`APEXBRASIL-SIAL2026_LOOP.mp4`): já vinha em 1080p H.264 sem áudio,
+  8,4MB, então só foi remuxado com `+faststart` (`-c copy`, sem
+  reencodar).
+- **`projetos.json` aponta pra `loopSIAL2026.mp4?v=2`**: mesmo nome de
+  arquivo, e o Cloudflare serve mídia com `max-age=14400` — sem mudar a
+  URL, quem já viu o loop antigo poderia continuar vendo ele por até 4h.
+- Rodapé: `v1.22` → `v1.22.1`.
